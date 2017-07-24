@@ -45,7 +45,7 @@ type Process struct {
 	// relative to the container's root.
 	Cwd string `json:"cwd"`
 	// Capabilities are Linux capabilities that are kept for the process.
-	Capabilities *LinuxCapabilities `json:"capabilities,omitempty" platform:"linux"`
+	Capabilities LinuxCapabilities `json:"capabilities,omitempty" platform:"linux"`
 	// Rlimits specifies rlimit options to apply to the process.
 	Rlimits []LinuxRlimit `json:"rlimits,omitempty" platform:"linux"`
 	// NoNewPrivileges controls whether additional privileges could be gained by processes in the container.
@@ -58,18 +58,19 @@ type Process struct {
 
 // LinuxCapabilities specifies the whitelist of capabilities that are kept for a process.
 // http://man7.org/linux/man-pages/man7/capabilities.7.html
-type LinuxCapabilities struct {
-	// Bounding is the set of capabilities checked by the kernel.
-	Bounding []string `json:"bounding,omitempty" platform:"linux"`
-	// Effective is the set of capabilities checked by the kernel.
-	Effective []string `json:"effective,omitempty" platform:"linux"`
-	// Inheritable is the capabilities preserved across execve.
-	Inheritable []string `json:"inheritable,omitempty" platform:"linux"`
-	// Permitted is the limiting superset for effective capabilities.
-	Permitted []string `json:"permitted,omitempty" platform:"linux"`
-	// Ambient is the ambient set of capabilities that are kept.
-	Ambient []string `json:"ambient,omitempty" platform:"linux"`
-}
+type LinuxCapabilities []string
+//type LinuxCapabilities struct {
+//	// Bounding is the set of capabilities checked by the kernel.
+//	Bounding []string `json:"bounding,omitempty" platform:"linux"`
+//	// Effective is the set of capabilities checked by the kernel.
+//	Effective []string `json:"effective,omitempty" platform:"linux"`
+//	// Inheritable is the capabilities preserved across execve.
+//	Inheritable []string `json:"inheritable,omitempty" platform:"linux"`
+//	// Permitted is the limiting superset for effective capabilities.
+//	Permitted []string `json:"permitted,omitempty" platform:"linux"`
+//	// Ambient is the ambient set of capabilities that are kept.
+//	Ambient []string `json:"ambient,omitempty" platform:"linux"`
+//}
 
 // Box specifies dimensions of a rectangle. Used for specifying the size of a console.
 type Box struct {
