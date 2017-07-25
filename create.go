@@ -122,16 +122,17 @@ func runContainer(context *cli.Context, createOnly bool) error {
 
 	var namespace string
 	var cmd *exec.Cmd
-	logFile, ex := os.OpenFile(filepath.Join(namespace, "runv.log"), os.O_CREATE|os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if ex != nil {
-		return ex
-	}
-	logrus.SetOutput(logFile)
-	defer logFile.Close()
 	if sharedContainer != "" {
-		logrus.Infof("share container process in namespace path %s %s", container, filepath.Join(namespace, "namespaced.sock"))
 		namespace = filepath.Join(root, sharedContainer, "namespace")
 		namespace, err = os.Readlink(namespace)
+		fmt.Println("namespace path is ", namespace)
+		logFile, ex := os.OpenFile(filepath.Join(namespace, "runv.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if ex != nil {
+			return ex
+		}
+		logrus.SetOutput(logFile)
+		defer logFile.Close()
+		logrus.Infof("share container process in namespace path %s %s", container, filepath.Join(namespace, "namespaced.sock"))
 		if err != nil {
 			return fmt.Errorf("cannot get namespace link of the shared container: %v", err)
 		}
@@ -151,6 +152,13 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		if err != nil {
 			return fmt.Errorf("failed to create runv namespace path: %v", err)
 		}
+		fmt.Println("namespace path is ", namespace)
+		logFile, ex := os.OpenFile(filepath.Join(namespace, "runv.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if ex != nil {
+			return ex
+		}
+		logrus.SetOutput(logFile)
+		defer logFile.Close()
 
 		args := []string{
 			"--default_cpus", fmt.Sprintf("%d", context.GlobalInt("default_cpus")),
