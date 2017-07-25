@@ -17,7 +17,6 @@ import (
 	"github.com/urfave/cli"
 	netcontext "golang.org/x/net/context"
 	"github.com/Sirupsen/logrus"
-	"io"
 )
 
 var createCommand = cli.Command{
