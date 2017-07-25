@@ -126,10 +126,10 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		namespace = filepath.Join(root, sharedContainer, "namespace")
 		namespace, err = os.Readlink(namespace)
 		fmt.Println("namespace path is ", namespace)
-		if err = os.MkdirAll(namespace, 0755); err != nil {
+		if err = os.MkdirAll(filepath.Join("/tmp/runv", container), 0755); err != nil {
 			return err
 		}
-		logFile, ex := os.OpenFile(filepath.Join(namespace, "runv.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		logFile, ex := os.OpenFile(filepath.Join("/tmp/runv", container, "runv.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if ex != nil {
 			return ex
 		}
@@ -155,10 +155,10 @@ func runContainer(context *cli.Context, createOnly bool) error {
 			return fmt.Errorf("failed to create runv namespace path: %v", err)
 		}
 		fmt.Println("namespace path is ", namespace)
-		if err = os.MkdirAll(namespace, 0755); err != nil {
+		if err = os.MkdirAll(filepath.Join("/tmp/runv", container), 0755); err != nil {
 			return err
 		}
-		logFile, ex := os.OpenFile(filepath.Join(namespace, "runv.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		logFile, ex := os.OpenFile(filepath.Join("/tmp/runv", container, "runv.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if ex != nil {
 			return ex
 		}
