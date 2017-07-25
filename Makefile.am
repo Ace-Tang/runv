@@ -12,7 +12,7 @@ LIBVIRT_BUILD_TAG=
 endif
 
 COMMIT=`git describe --dirty --always --tags 2> /dev/null || true`
-GOLDFLAGS=" -extldflags -static -X main.gitCommit=${COMMIT} -X main.version=${VERSION}"
+GOLDFLAGS="-X main.gitCommit=${COMMIT} -X main.version=${VERSION}"
 HYPER_BULD_TAGS=$(XEN_BUILD_TAG) $(LIBVIRT_BUILD_TAG)
 
 all-local: build-runv
