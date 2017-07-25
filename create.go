@@ -16,6 +16,8 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/urfave/cli"
 	netcontext "golang.org/x/net/context"
+	"github.com/Sirupsen/logrus"
+	"io"
 )
 
 var createCommand = cli.Command{
@@ -122,12 +124,14 @@ func runContainer(context *cli.Context, createOnly bool) error {
 	var namespace string
 	var cmd *exec.Cmd
 	if sharedContainer != "" {
+		logrus.Infof("share container process in namespace path %s %s", container, filepath.Join(namespace, "namespaced.sock"))
 		namespace = filepath.Join(root, sharedContainer, "namespace")
 		namespace, err = os.Readlink(namespace)
 		if err != nil {
 			return fmt.Errorf("cannot get namespace link of the shared container: %v", err)
 		}
 	} else {
+		logrus.Infof("create container in namespace path %s %s", container, filepath.Join(namespace, "namespaced.sock"))
 		path, err := osext.Executable()
 		if err != nil {
 			return fmt.Errorf("cannot find self executable path for %s: %v", os.Args[0], err)
@@ -179,6 +183,7 @@ func runContainer(context *cli.Context, createOnly bool) error {
 			"--state-dir", root,
 			"--listen", filepath.Join(namespace, "namespaced.sock"),
 		)
+		logrus.Infof("start containerd for hyper: %s %v", path, append([]string{"runv"}, args...))
 		cmd = &exec.Cmd{
 			Path: path,
 			Args: append([]string{"runv"}, args...),
@@ -187,12 +192,23 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			Setsid: true,
 		}
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 		err = cmd.Start()
 		if err != nil {
+			logrus.Errorf("failed to launch runv containerd:%s %v", container, err)
 			return fmt.Errorf("failed to launch runv containerd: %v", err)
 		}
+		go func() {
+			cmd.Wait()
+			logrus.Infof("containerd for hyper stopped. %s", container)
+		}()
 		if _, err = os.Stat(filepath.Join(namespace, "namespaced.sock")); os.IsNotExist(err) {
 			time.Sleep(3 * time.Second)
+		}
+		if _, err = os.Stat(filepath.Join(namespace, "namespaced.sock")); os.IsNotExist(err) {
+			logrus.Errorf("start containerd for runv error, %s not exist", filepath.Join(namespace, "namespaced.sock"))
+			return fmt.Errorf("start containerd for runv error, %s not exist", filepath.Join(namespace, "namespaced.sock"))
 		}
 	}
 

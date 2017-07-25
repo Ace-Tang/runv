@@ -154,7 +154,9 @@ var ContainerdCommand = cli.Command{
 			go namespaceShare(sv, containerdDir, stateDir)
 		}
 
+		fmt.Printf("start daemon at %s\n", context.String("listen"))
 		if err = daemon(sv, context.String("listen")); err != nil {
+			fmt.Printf("start daemon at %s error %v\n", context.String("listen"), err)
 			glog.Errorf("%v", err)
 			return cli.NewExitError(err.Error(), -1)
 		}
