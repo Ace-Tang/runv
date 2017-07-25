@@ -10,13 +10,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/hyperhq/runv/containerd/api/grpc/types"
 	"github.com/kardianos/osext"
 	"github.com/kr/pty"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/urfave/cli"
 	netcontext "golang.org/x/net/context"
-	"github.com/Sirupsen/logrus"
 )
 
 var createCommand = cli.Command{
@@ -122,6 +122,12 @@ func runContainer(context *cli.Context, createOnly bool) error {
 
 	var namespace string
 	var cmd *exec.Cmd
+	logFile, ex := os.OpenFile(filepath.Join(namespace, "runv.log"), os.O_CREATE|os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if ex != nil {
+		return ex
+	}
+	logrus.SetOutput(logFile)
+	defer logFile.Close()
 	if sharedContainer != "" {
 		logrus.Infof("share container process in namespace path %s %s", container, filepath.Join(namespace, "namespaced.sock"))
 		namespace = filepath.Join(root, sharedContainer, "namespace")
@@ -191,8 +197,9 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			Setsid: true,
 		}
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+
+		cmd.Stdout = logFile
+		cmd.Stderr = logFile
 		err = cmd.Start()
 		if err != nil {
 			logrus.Errorf("failed to launch runv containerd:%s %v", container, err)
