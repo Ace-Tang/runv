@@ -137,7 +137,6 @@ func runContainer(context *cli.Context, createOnly bool) error {
 			return fmt.Errorf("cannot get namespace link of the shared container: %v", err)
 		}
 	} else {
-		logrus.Infof("create container in namespace path %s %s", container, filepath.Join(namespace, "namespaced.sock"))
 		path, err := osext.Executable()
 		if err != nil {
 			return fmt.Errorf("cannot find self executable path for %s: %v", os.Args[0], err)
@@ -159,6 +158,7 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		}
 		logrus.SetOutput(logFile)
 		defer logFile.Close()
+		logrus.Infof("create container in namespace path %s %s", container, filepath.Join(namespace, "namespaced.sock"))
 
 		args := []string{
 			"--default_cpus", fmt.Sprintf("%d", context.GlobalInt("default_cpus")),
