@@ -324,7 +324,7 @@ func ociCreate(context *cli.Context, container string, createFunc func(stdin, st
 	var stdin, stdout, stderr string
 	var ptymaster, tty *os.File
 	if context.String("console") != "" {
-		tty, err = os.OpenFile(context.String("console"), os.O_RDWR, 0)
+		tty, err = os.OpenFile(context.String("console"), os.O_RDWR|syscall.O_NOCTTY, 0)
 		if err != nil {
 			return err
 		}
@@ -384,8 +384,13 @@ func ociCreate(context *cli.Context, container string, createFunc func(stdin, st
 				Setsid:  true,
 			},
 		}
+		logrus.Infof("start terminal proxy process: %s %v", path, args)
 		err = cmd.Start()
+		if tty != nil {
+			tty.Close()
+		}
 		if err != nil {
+			logrus.Errorf("start terminal proxy process error. %v", err)
 			return err
 		}
 	}
