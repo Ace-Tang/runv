@@ -33,20 +33,22 @@ func (p *Process) setupIO() error {
 
 	// use a new go routine to avoid deadlock when stdin is fifo
 	go func() {
-		if stdinCloser, err := os.OpenFile(p.Stdin, syscall.O_WRONLY, 0); err == nil {
+		if stdinCloser, err := os.OpenFile(p.Stdin, syscall.O_WRONLY|syscall.O_NOCTTY, 0); err == nil {
 			p.stdinCloser = stdinCloser
+		} else {
+
 		}
 	}()
 
 	var stdin, stdout, stderr *os.File
 	var err error
 
-	stdin, err = os.OpenFile(p.Stdin, syscall.O_RDONLY, 0)
+	stdin, err = os.OpenFile(p.Stdin, syscall.O_RDONLY|syscall.O_NOCTTY, 0)
 	if err != nil {
 		return err
 	}
 
-	stdout, err = os.OpenFile(p.Stdout, syscall.O_RDWR, 0)
+	stdout, err = os.OpenFile(p.Stdout, syscall.O_RDWR|syscall.O_NOCTTY, 0)
 	if err != nil {
 		return err
 	}
@@ -55,7 +57,7 @@ func (p *Process) setupIO() error {
 	// github.com/docker/containerd/containerd-shim/process.go:239
 	// This stanza keeps the API somewhat consistent
 	if st, err := os.Stat(p.Stderr); st != nil || !p.Spec.Terminal {
-		stderr, err = os.OpenFile(p.Stderr, syscall.O_RDWR, 0)
+		stderr, err = os.OpenFile(p.Stderr, syscall.O_RDWR|syscall.O_NOCTTY, 0)
 		if err != nil {
 			return err
 		}
