@@ -224,9 +224,9 @@ func runContainer(context *cli.Context, createOnly bool) error {
 			logrus.Infof("containerd for hyper stopped. %s", container)
 		}()
 
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 50; i++ {
 			if _, err = os.Stat(filepath.Join(namespace, "namespaced.sock")); os.IsNotExist(err) {
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(20 * time.Millisecond)
 			}
 		}
 		if _, err = os.Stat(filepath.Join(namespace, "namespaced.sock")); os.IsNotExist(err) {
@@ -237,6 +237,7 @@ func runContainer(context *cli.Context, createOnly bool) error {
 
 	err = createContainer(context, container, namespace, spec)
 	if err != nil {
+		logrus.Errorf("create container error %v", err)
 		cmd.Process.Signal(syscall.SIGINT)
 		return fmt.Errorf("failed to create container: %v", err)
 	}
