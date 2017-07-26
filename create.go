@@ -129,7 +129,7 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		if err = os.MkdirAll(filepath.Join("/var/log/runv", container), 0755); err != nil {
 			return err
 		}
-		logFile, ex := os.OpenFile(filepath.Join("/var/log/runv", container, "runv.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		logFile, ex := os.OpenFile(filepath.Join("/var/log/runv", container, "create.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if ex != nil {
 			return ex
 		}
@@ -158,7 +158,7 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		if err = os.MkdirAll(filepath.Join("/var/log/runv", container), 0755); err != nil {
 			return err
 		}
-		logFile, ex := os.OpenFile(filepath.Join("/var/log/runv", container, "runv.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		logFile, ex := os.OpenFile(filepath.Join("/var/log/runv", container, "create.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if ex != nil {
 			return ex
 		}
@@ -212,9 +212,15 @@ func runContainer(context *cli.Context, createOnly bool) error {
 			Setsid: true,
 		}
 
-		cmd.Stdout = logFile
-		cmd.Stderr = logFile
+		logFile2, ex := os.OpenFile(filepath.Join("/var/log/runv", container, "containerd.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if ex != nil {
+			return ex
+		}
+
+		cmd.Stdout = logFile2
+		cmd.Stderr = logFile2
 		err = cmd.Start()
+		logFile2.Close()
 		if err != nil {
 			logrus.Errorf("failed to launch runv containerd:%s %v", container, err)
 			return fmt.Errorf("failed to launch runv containerd: %v", err)
