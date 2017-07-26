@@ -26,7 +26,7 @@ func resizeTty(c types.APIClient, container, process string) {
 		Width:  uint32(ws.Width),
 		Height: uint32(ws.Height),
 	}); err != nil {
-		fmt.Printf("set winsize failed, %v\n", err)
+		fmt.Printf("set winsize failed, %d %d, %v\n", ws.Width, ws.Height, err)
 	}
 }
 

@@ -44,12 +44,12 @@ var shimCommand = cli.Command{
 		}
 		exitcode := -1
 		if context.Bool("proxy-exit-code") {
-			glog.V(3).Infof("using shim to proxy exit code")
+			//glog.V(3).Infof("using shim to proxy exit code")
 			defer func() { os.Exit(exitcode) }()
 		}
 
 		if context.Bool("proxy-winsize") {
-			glog.V(3).Infof("using shim to proxy winsize")
+			//glog.V(3).Infof("using shim to proxy winsize")
 			s, err := term.SetRawTerminal(os.Stdin.Fd())
 			if err != nil {
 				return cli.NewExitError(fmt.Sprintf("failed to set raw terminal: %v", err), -1)
@@ -60,7 +60,7 @@ var shimCommand = cli.Command{
 
 		if context.Bool("proxy-signal") {
 			// TODO
-			glog.V(3).Infof("using shim to proxy signal")
+			//glog.V(3).Infof("using shim to proxy signal")
 			sigc := forwardAllSignals(c, container, process)
 			defer signal.Stop(sigc)
 		}
