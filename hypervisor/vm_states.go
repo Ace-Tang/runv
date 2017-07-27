@@ -10,6 +10,7 @@ import (
 
 	"github.com/hyperhq/hypercontainer-utils/hlog"
 	"github.com/hyperhq/runv/hypervisor/types"
+	"github.com/Sirupsen/logrus"
 )
 
 // states
@@ -184,6 +185,7 @@ func streamCopy(tty *TtyIO, stdinPipe io.WriteCloser, stdoutPipe, stderrPipe io.
 	if tty.Stdin != nil {
 		go func() {
 			_, err := io.Copy(stdinPipe, tty.Stdin)
+			logrus.Infof("stream mgr: stdin closed %v", err)
 			stdinPipe.Close()
 			if err != nil {
 				// we should not call cleanup when tty.Stdin reaches EOF
@@ -195,6 +197,7 @@ func streamCopy(tty *TtyIO, stdinPipe io.WriteCloser, stdoutPipe, stderrPipe io.
 		wg.Add(1)
 		go func() {
 			_, err := io.Copy(tty.Stdout, stdoutPipe)
+			logrus.Infof("stream mgr: stdout closed %v", err)
 			if err != nil {
 				once.Do(cleanup)
 			}
@@ -205,6 +208,7 @@ func streamCopy(tty *TtyIO, stdinPipe io.WriteCloser, stdoutPipe, stderrPipe io.
 		wg.Add(1)
 		go func() {
 			_, err := io.Copy(tty.Stderr, stderrPipe)
+			logrus.Infof("stream mgr: stderr closed %v", err)
 			if err != nil {
 				once.Do(cleanup)
 			}
