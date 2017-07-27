@@ -32,7 +32,7 @@ func (p *Process) setupIO() error {
 	glog.V(3).Infof("process setupIO: stdin %s, stdout %s, stderr %s", p.Stdin, p.Stdout, p.Stderr)
 
 	if p.Spec.Terminal {
-		if tty, err := os.OpenFile(p.Stdin, syscall.O_WRONLY|syscall.O_NOCTTY, 0); err == nil {
+		if tty, err := os.OpenFile(p.Stdin, syscall.O_RDWR|syscall.O_NOCTTY, 0); err == nil {
 			p.stdio = &hypervisor.TtyIO{
 				Stdin:  tty,
 				Stdout: tty,
