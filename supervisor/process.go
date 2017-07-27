@@ -31,42 +31,51 @@ type Process struct {
 func (p *Process) setupIO() error {
 	glog.V(3).Infof("process setupIO: stdin %s, stdout %s, stderr %s", p.Stdin, p.Stdout, p.Stderr)
 
-	// use a new go routine to avoid deadlock when stdin is fifo
-	go func() {
-		if stdinCloser, err := os.OpenFile(p.Stdin, syscall.O_WRONLY|syscall.O_NOCTTY, 0); err == nil {
-			p.stdinCloser = stdinCloser
-		} else {
-
+	if p.Spec.Terminal {
+		if tty, err := os.OpenFile(p.Stdin, syscall.O_WRONLY|syscall.O_NOCTTY, 0); err == nil {
+			p.stdio = &hypervisor.TtyIO{
+				Stdin:  tty,
+				Stdout: tty,
+				Stderr: tty,
+			}
+			p.stdinCloser = tty
 		}
-	}()
+	} else {
+		// use a new go routine to avoid deadlock when stdin is fifo
+		go func() {
+			if stdinCloser, err := os.OpenFile(p.Stdin, syscall.O_WRONLY, 0); err == nil {
+				p.stdinCloser = stdinCloser
+			}
+		}()
 
-	var stdin, stdout, stderr *os.File
-	var err error
+		var stdin, stdout, stderr *os.File
+		var err error
 
-	stdin, err = os.OpenFile(p.Stdin, syscall.O_RDONLY|syscall.O_NOCTTY, 0)
-	if err != nil {
-		return err
-	}
-
-	stdout, err = os.OpenFile(p.Stdout, syscall.O_RDWR|syscall.O_NOCTTY, 0)
-	if err != nil {
-		return err
-	}
-
-	// Docker does not create stderr if it's a terminal process since at least 1.13+
-	// github.com/docker/containerd/containerd-shim/process.go:239
-	// This stanza keeps the API somewhat consistent
-	if st, err := os.Stat(p.Stderr); st != nil || !p.Spec.Terminal {
-		stderr, err = os.OpenFile(p.Stderr, syscall.O_RDWR|syscall.O_NOCTTY, 0)
+		stdin, err = os.OpenFile(p.Stdin, syscall.O_RDONLY, 0)
 		if err != nil {
 			return err
 		}
-	}
 
-	p.stdio = &hypervisor.TtyIO{
-		Stdin:  stdin,
-		Stdout: stdout,
-		Stderr: stderr,
+		stdout, err = os.OpenFile(p.Stdout, syscall.O_RDWR, 0)
+		if err != nil {
+			return err
+		}
+
+		// Docker does not create stderr if it's a terminal process since at least 1.13+
+		// github.com/docker/containerd/containerd-shim/process.go:239
+		// This stanza keeps the API somewhat consistent
+		if st, err := os.Stat(p.Stderr); st != nil || !p.Spec.Terminal {
+			stderr, err = os.OpenFile(p.Stderr, syscall.O_RDWR, 0)
+			if err != nil {
+				return err
+			}
+		}
+
+		p.stdio = &hypervisor.TtyIO{
+			Stdin:  stdin,
+			Stdout: stdout,
+			Stderr: stderr,
+		}
 	}
 	glog.V(3).Infof("process setupIO() successfully")
 
