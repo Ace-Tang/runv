@@ -191,9 +191,17 @@ func streamCopy(tty *TtyIO, stdinPipe io.WriteCloser, stdoutPipe, stderrPipe io.
 	stopChan := make(chan struct{})
 	if tty.Stdin != nil {
 		go func() {
+			copyFunc := func() chan error {
+				retChan := make(chan error)
+				go func() {
+					_, err := io.Copy(stdinPipe, tty.Stdin)
+					retChan <- err
+				}()
+				return retChan
+			}
 			select {
 			case <-stopChan:
-			case _, err := io.Copy(stdinPipe, tty.Stdin):
+			case err := <- copyFunc():
 				logrus.Infof("stream mgr: stdin closed %v", err)
 				if err != nil {
 					// we should not call cleanup when tty.Stdin reaches EOF
