@@ -324,7 +324,7 @@ func ociCreate(context *cli.Context, container, process string, createFunc func(
 	var stdin, stdout, stderr string
 	var ptymaster, tty *os.File
 	if context.String("console") != "" {
-		tty, err = os.OpenFile(context.String("console"), os.O_RDWR|syscall.O_NOCTTY, 0)
+		tty, err = os.OpenFile(context.String("console"), os.O_RDWR, 0)
 		if err != nil {
 			return err
 		}
