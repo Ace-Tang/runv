@@ -199,8 +199,7 @@ func runProcess(context *cli.Context, container string, config *specs.Process) (
 	}
 	evChan := containerEvents(c, container)
 
-	//if !context.Bool("detach") && config.Terminal {
-	if config.Terminal {
+	if !context.Bool("detach") && config.Terminal {
 		s, err := term.SetRawTerminal(os.Stdin.Fd())
 		if err != nil {
 			return -1, fmt.Errorf("failed to set raw terminal: %v", err)
