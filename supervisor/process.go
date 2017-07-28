@@ -32,13 +32,15 @@ func (p *Process) setupIO() error {
 	glog.V(3).Infof("process setupIO: stdin %s, stdout %s, stderr %s", p.Stdin, p.Stdout, p.Stderr)
 
 	if p.Spec.Terminal {
-		if tty, err := os.OpenFile(p.Stdin, syscall.O_RDWR|syscall.O_NOCTTY, 0); err == nil {
+		if ttyW, err := os.OpenFile(p.Stdin, syscall.O_WRONLY|syscall.O_NOCTTY, 0); err == nil {
 			p.stdio = &hypervisor.TtyIO{
-				Stdin:  tty,
-				Stdout: tty,
-				Stderr: tty,
+				Stdout: ttyW,
+				Stderr: ttyW,
 			}
-			p.stdinCloser = tty
+			if ttyR, err := os.OpenFile(p.Stdin, syscall.O_RDONLY|syscall.O_NOCTTY, 0); err == nil {
+				p.stdio.Stdin = ttyR
+				p.stdinCloser = ttyR
+			}
 		}
 	} else {
 		// use a new go routine to avoid deadlock when stdin is fifo
