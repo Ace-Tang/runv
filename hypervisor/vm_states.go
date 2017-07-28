@@ -145,9 +145,9 @@ func (ctx *VmContext) attachCmd(cmd *AttachCommand) error {
 
 // TODO move this logic to hyperd
 type TtyIO struct {
-	Stdin  io.ReadCloser
-	Stdout io.Writer
-	Stderr io.Writer
+	Stdin     io.ReadCloser
+	Stdout    io.Writer
+	Stderr    io.Writer
 	ShutWrite func() error
 }
 
@@ -188,15 +188,20 @@ func streamCopy(tty *TtyIO, stdinPipe io.WriteCloser, stdoutPipe, stderrPipe io.
 			stderrPipe.Close()
 		}
 	}
+	stopChan := make(chan struct{})
 	if tty.Stdin != nil {
 		go func() {
-			_, err := io.Copy(stdinPipe, tty.Stdin)
-			logrus.Infof("stream mgr: stdin closed %v", err)
-			stdinPipe.Close()
-			if err != nil {
-				// we should not call cleanup when tty.Stdin reaches EOF
-				once.Do(cleanup)
+			select {
+			case <-stopChan:
+			case _, err := io.Copy(stdinPipe, tty.Stdin):
+				logrus.Infof("stream mgr: stdin closed %v", err)
+				if err != nil {
+					// we should not call cleanup when tty.Stdin reaches EOF
+					once.Do(cleanup)
+				}
 			}
+			stdinPipe.Close()
+			logrus.Infof("stdin stream closed")
 		}()
 	}
 	if tty.Stdout != nil {
@@ -223,6 +228,7 @@ func streamCopy(tty *TtyIO, stdinPipe io.WriteCloser, stdoutPipe, stderrPipe io.
 	}
 	wg.Wait()
 	once.Do(cleanup)
+	close(stopChan)
 }
 
 func (ctx *VmContext) startPod() error {
