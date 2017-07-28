@@ -20,13 +20,13 @@ func resizeTty(c types.APIClient, container, process string) {
 		return
 	}
 
-	if uint32(ws.Width) != 0 && uint32(ws.Height) != 0 {
-		if _, err = c.UpdateProcess(netcontext.Background(), &types.UpdateProcessRequest{
-			Id:     container,
-			Pid:    process,
-			Width:  uint32(ws.Width),
-			Height: uint32(ws.Height),
-		}); err != nil {
+	if _, err = c.UpdateProcess(netcontext.Background(), &types.UpdateProcessRequest{
+		Id:     container,
+		Pid:    process,
+		Width:  uint32(ws.Width),
+		Height: uint32(ws.Height),
+	}); err != nil {
+		if uint32(ws.Width) != 0 && uint32(ws.Height) != 0 {
 			fmt.Printf("set winsize failed, %d %d, %v\n", ws.Width, ws.Height, err)
 		}
 	}
