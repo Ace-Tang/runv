@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/hyperhq/hypercontainer-utils/hlog"
 	"github.com/hyperhq/runv/hypervisor/types"
-	"github.com/Sirupsen/logrus"
 )
 
 // states
@@ -145,10 +145,9 @@ func (ctx *VmContext) attachCmd(cmd *AttachCommand) error {
 
 // TODO move this logic to hyperd
 type TtyIO struct {
-	Stdin     io.ReadCloser
-	Stdout    io.Writer
-	Stderr    io.Writer
-	ShutWrite func() error
+	Stdin  io.ReadCloser
+	Stdout io.Writer
+	Stderr io.Writer
 }
 
 func (tty *TtyIO) Close() {
@@ -163,11 +162,6 @@ func (tty *TtyIO) Close() {
 		}
 		if c, ok := w.(io.WriteCloser); ok {
 			c.Close()
-		}
-	}
-	if tty.ShutWrite != nil {
-		if err := tty.ShutWrite(); err != nil {
-			logrus.Errorf("shutdown write of output stream error. %v", err)
 		}
 	}
 	cf(tty.Stdout)
@@ -201,7 +195,7 @@ func streamCopy(tty *TtyIO, stdinPipe io.WriteCloser, stdoutPipe, stderrPipe io.
 			}
 			select {
 			case <-stopChan:
-			case err := <- copyFunc():
+			case err := <-copyFunc():
 				logrus.Infof("stream mgr: stdin closed %v", err)
 				if err != nil {
 					// we should not call cleanup when tty.Stdin reaches EOF

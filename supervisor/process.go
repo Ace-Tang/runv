@@ -37,9 +37,6 @@ func (p *Process) setupIO() error {
 				Stdin:  tty,
 				Stdout: tty,
 				Stderr: tty,
-				ShutWrite: func() error {
-					return syscall.Shutdown(int(tty.Fd()), syscall.SHUT_WR)
-				},
 			}
 			p.stdinCloser = tty
 
