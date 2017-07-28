@@ -148,6 +148,7 @@ type TtyIO struct {
 	Stdin  io.ReadCloser
 	Stdout io.Writer
 	Stderr io.Writer
+	ShutWrite func() error
 }
 
 func (tty *TtyIO) Close() {
@@ -162,6 +163,11 @@ func (tty *TtyIO) Close() {
 		}
 		if c, ok := w.(io.WriteCloser); ok {
 			c.Close()
+		}
+	}
+	if tty.ShutWrite != nil {
+		if err := tty.ShutWrite(); err != nil {
+			logrus.Errorf("shutdown write of output stream error. %v", err)
 		}
 	}
 	cf(tty.Stdout)
