@@ -351,6 +351,8 @@ func execPoststopHooks(rt *specs.Spec, state *specs.State) error {
 
 func (c *Container) reap() {
 	containerRoot := filepath.Join(hypervisor.BaseDir, c.ownerPod.vm.Id, hypervisor.ShareDirTag, c.Id)
+	rootfs := filepath.Join(containerRoot, "rootfs")
+	utils.Umount(rootfs)
 	utils.Umount(containerRoot)
 	os.RemoveAll(containerRoot)
 	os.RemoveAll(filepath.Join(c.ownerPod.sv.StateDir, c.Id))
