@@ -9,6 +9,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/hyperhq/runv/hypervisor"
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/Sirupsen/logrus"
 )
 
 type Process struct {
@@ -94,6 +95,7 @@ func (p *Process) ttyResize(container string, width, height int) error {
 func (p *Process) closeStdin() error {
 	var err error
 	if p.stdinCloser != nil {
+		logrus.Infof("close stdin closer %s", p.Id)
 		err = p.stdinCloser.Close()
 		p.stdinCloser = nil
 	}

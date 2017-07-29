@@ -11,6 +11,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/hyperhq/runv/factory"
 	"github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/Sirupsen/logrus"
 )
 
 type Supervisor struct {
@@ -146,6 +147,7 @@ func (sv *Supervisor) reaper() {
 	events := sv.Events.Events(time.Time{})
 	for e := range events {
 		if e.Type == EventExit {
+			logrus.Infof("process exit %s %s", e.ID, e.PID)
 			go sv.reap(e.ID, e.PID)
 		}
 	}
