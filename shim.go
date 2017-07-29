@@ -117,6 +117,7 @@ var shimCommand = cli.Command{
 		for e := range evChan {
 			if e.Type == "exit" && e.Pid == process {
 				exitcode = int(e.Status)
+				close(stopChan)
 				break
 			}
 		}
