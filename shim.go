@@ -53,33 +53,33 @@ var shimCommand = cli.Command{
 		if context.Bool("proxy-winsize") {
 			stdinStream, err = os.OpenFile(stdinPath, syscall.O_WRONLY, 0)
 			if err != nil {
-				glog.V(3).Infof("open input error %s %v", stdinPath, err)
+				//glog.V(3).Infof("open input error %s %v", stdinPath, err)
 				return err
 			}
-			glog.V(3).Infof("opened stdin %s", stdinPath)
+			//glog.V(3).Infof("opened stdin %s", stdinPath)
 
 			stdoutStream, err = os.OpenFile(stdoutPath, syscall.O_RDONLY, 0)
 			if err != nil {
-				glog.V(3).Infof("open output error %s %v", stdoutPath, err)
+				//glog.V(3).Infof("open output error %s %v", stdoutPath, err)
 				return err
 			}
-			glog.V(3).Infof("opened stdout %s", stdoutPath)
+			//glog.V(3).Infof("opened stdout %s", stdoutPath)
 
 		}
 
 		if stdinStream != nil {
 			go func() {
-				glog.V(3).Infof("start copy stdin %s", stdinPath)
+				//glog.V(3).Infof("start copy stdin %s", stdinPath)
 				io.Copy(stdinStream, os.Stdin)
-				glog.V(3).Infof("end copy stdin %s", stdinPath)
+				//glog.V(3).Infof("end copy stdin %s", stdinPath)
 			}()
 		}
 
 		if stdoutStream != nil {
 			go func() {
-				glog.V(3).Infof("start copy stdout %s", stdinPath)
+				//glog.V(3).Infof("start copy stdout %s", stdinPath)
 				io.Copy(os.Stdout, stdoutStream)
-				glog.V(3).Infof("end copy stdout %s", stdinPath)
+				//glog.V(3).Infof("end copy stdout %s", stdinPath)
 			}()
 		}
 
@@ -89,12 +89,12 @@ var shimCommand = cli.Command{
 		}
 		exitcode := -1
 		if context.Bool("proxy-exit-code") {
-			glog.V(3).Infof("using shim to proxy exit code")
+			//glog.V(3).Infof("using shim to proxy exit code")
 			defer func() { os.Exit(exitcode) }()
 		}
 
 		if context.Bool("proxy-winsize") {
-			glog.V(3).Infof("using shim to proxy winsize")
+			//glog.V(3).Infof("using shim to proxy winsize")
 			s, err := term.SetRawTerminal(os.Stdin.Fd())
 			if err != nil {
 				return cli.NewExitError(fmt.Sprintf("failed to set raw terminal: %v", err), -1)
@@ -105,7 +105,7 @@ var shimCommand = cli.Command{
 
 		if context.Bool("proxy-signal") {
 			// TODO
-			glog.V(3).Infof("using shim to proxy signal")
+			//glog.V(3).Infof("using shim to proxy signal")
 			sigc := forwardAllSignals(c, container, process)
 			defer signal.Stop(sigc)
 		}
