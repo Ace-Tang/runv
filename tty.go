@@ -35,13 +35,15 @@ func resizeTty(c types.APIClient, container, process string) {
 	}
 }
 
-func monitorTtySize(c types.APIClient, container, process string) {
+func monitorTtySize(c types.APIClient, container, process string, stopChan chan struct{}) {
 	resizeTty(c, container, process)
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGWINCH)
 	lastW := uint16(0)
 	lastH := uint16(0)
-	for range time.Tick(time.Second * 2) {
+	select {
+	case <-stopChan:
+	case <-time.Tick(time.Second * 2):
 		if ws, err := term.GetWinsize(os.Stdin.Fd()); err == nil {
 			if ws.Width != lastW || ws.Height != lastH {
 				resizeTty(c, container, process)

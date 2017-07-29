@@ -93,6 +93,8 @@ var shimCommand = cli.Command{
 			defer func() { os.Exit(exitcode) }()
 		}
 
+		stopChan := make(chan struct{})
+
 		if context.Bool("proxy-winsize") {
 			//glog.V(3).Infof("using shim to proxy winsize")
 			s, err := term.SetRawTerminal(os.Stdin.Fd())
@@ -100,7 +102,7 @@ var shimCommand = cli.Command{
 				return cli.NewExitError(fmt.Sprintf("failed to set raw terminal: %v", err), -1)
 			}
 			defer term.RestoreTerminal(os.Stdin.Fd(), s)
-			monitorTtySize(c, container, process)
+			monitorTtySize(c, container, process, stopChan)
 		}
 
 		if context.Bool("proxy-signal") {

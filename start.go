@@ -87,7 +87,7 @@ func startContainer(context *cli.Context, bundle, container, address string, con
 			return -1, fmt.Errorf("failed to set raw terminal %v", err)
 		}
 		defer term.RestoreTerminal(os.Stdin.Fd(), s)
-		monitorTtySize(c, container, "init")
+		monitorTtySize(c, container, "init", make(chan struct{}))
 	}
 	var started bool
 	for e := range evChan {
