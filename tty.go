@@ -41,7 +41,7 @@ func monitorTtySize(c types.APIClient, container, process string) {
 	signal.Notify(sigchan, syscall.SIGWINCH)
 	lastW := uint16(0)
 	lastH := uint16(0)
-	for <- time.Tick(time.Second * 2) {
+	for range time.Tick(time.Second * 2) {
 		if ws, err := term.GetWinsize(os.Stdin.Fd()); err == nil {
 			if ws.Width != lastW || ws.Height != lastH {
 				resizeTty(c, container, process)
