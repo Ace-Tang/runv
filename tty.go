@@ -21,7 +21,7 @@ func resizeTty(c types.APIClient, container, process string) {
 		return
 	}
 
-	fmt.Printf("resize %d %d\n", ws.Width, ws.Height)
+	//fmt.Printf("resize %d %d\n", ws.Width, ws.Height)
 
 	if _, err = c.UpdateProcess(netcontext.Background(), &types.UpdateProcessRequest{
 		Id:     container,
