@@ -34,6 +34,12 @@ var shimCommand = cli.Command{
 		cli.BoolFlag{
 			Name: "proxy-winsize",
 		},
+		cli.StringFlag{
+			Name: "input-pipe",
+		},
+		cli.StringFlag{
+			Name: "output-pipe",
+		},
 	},
 	Action: func(context *cli.Context) error {
 		root := context.GlobalString("root")
@@ -42,8 +48,8 @@ var shimCommand = cli.Command{
 
 		var stdinStream, stdoutStream io.ReadWriteCloser
 		var err error
-		stdinPath := fmt.Sprintf("/var/log/runv/%s/%s-0", container, process)
-		stdoutPath := fmt.Sprintf("/var/log/runv/%s/%s-1", container, process)
+		stdinPath := context.String("input-pipe")
+		stdoutPath := context.String("output-pipe")
 		if context.Bool("proxy-winsize") {
 			stdinStream, err = os.OpenFile(stdinPath, syscall.O_WRONLY, 0)
 			if err != nil {

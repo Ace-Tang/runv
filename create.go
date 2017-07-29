@@ -346,9 +346,13 @@ func ociCreate(context *cli.Context, container, process string, createFunc func(
 		stderr = fmt.Sprintf("/proc/%d/fd/2", pid)
 	} else {
 		defer tty.Close()
-		stdin = fmt.Sprintf("/var/log/runv/%s/%s-0", container, process)
+		streamDir := filepath.Join(context.GlobalString("root"), container, "stream")
+		if _, ex := os.Stat(streamDir); ex != nil && os.IsNotExist(ex) {
+			os.MkdirAll(streamDir, 0755)
+		}
+		stdin = fmt.Sprintf("%s/%s-0", streamDir, process)
 		unix.Mkfifo(stdin, 0)
-		stdout = fmt.Sprintf("/var/log/runv/%s/%s-1", container, process)
+		stdout = fmt.Sprintf("%s/%s-1", streamDir, process)
 		unix.Mkfifo(stdout, 0)
 	}
 	err = createFunc(stdin, stdout, stderr)
@@ -372,7 +376,7 @@ func ociCreate(context *cli.Context, container, process string, createFunc func(
 			args = append(args, "--proxy-exit-code", "--proxy-signal")
 		}
 		if tty != nil {
-			args = append(args, "--proxy-winsize")
+			args = append(args, "--proxy-winsize", "--input-pipe", stdin, "--output-pipe", stdout)
 		}
 		cmd = &exec.Cmd{
 			Path:   path,
