@@ -17,6 +17,7 @@ import (
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/urfave/cli"
 	netcontext "golang.org/x/net/context"
+	"golang.org/x/sys/unix"
 )
 
 var createCommand = cli.Command{
@@ -345,9 +346,10 @@ func ociCreate(context *cli.Context, container, process string, createFunc func(
 		stderr = fmt.Sprintf("/proc/%d/fd/2", pid)
 	} else {
 		defer tty.Close()
-		stdin = tty.Name()
-		stdout = tty.Name()
-		stderr = tty.Name()
+		stdin = fmt.Sprintf("/var/log/runv/%s/%s-0", container, process)
+		unix.Mkfifo(stdin, 0)
+		stdout = fmt.Sprintf("/var/log/runv/%s/%s-1", container, process)
+		unix.Mkfifo(stdout, 0)
 	}
 	err = createFunc(stdin, stdout, stderr)
 	if err != nil {

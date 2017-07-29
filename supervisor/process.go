@@ -9,7 +9,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/hyperhq/runv/hypervisor"
 	"github.com/opencontainers/runtime-spec/specs-go"
-	"github.com/Sirupsen/logrus"
 )
 
 type Process struct {
@@ -32,52 +31,49 @@ type Process struct {
 func (p *Process) setupIO() error {
 	glog.V(3).Infof("process setupIO: stdin %s, stdout %s, stderr %s", p.Stdin, p.Stdout, p.Stderr)
 
-	if p.Spec.Terminal {
-		if tty, err := os.OpenFile(p.Stdin, syscall.O_RDWR|syscall.O_NOCTTY, 0); err == nil {
-			p.stdio = &hypervisor.TtyIO{
-				Stdin:  tty,
-				Stdout: tty,
-				Stderr: tty,
-			}
-			p.stdinCloser = tty
-
+	// use a new go routine to avoid deadlock when stdin is fifo
+	go func() {
+		if stdinCloser, err := os.OpenFile(p.Stdin, syscall.O_WRONLY, 0); err == nil {
+			p.stdinCloser = stdinCloser
+			glog.V(3).Infof("process setupIO: stdin write only opened %s", p.Stdin)
+		} else {
+			glog.V(3).Infof("process setupIO: stdin write only opened %s %v", p.Stdin, err)
 		}
-	} else {
-		// use a new go routine to avoid deadlock when stdin is fifo
-		go func() {
-			if stdinCloser, err := os.OpenFile(p.Stdin, syscall.O_WRONLY, 0); err == nil {
-				p.stdinCloser = stdinCloser
-			}
-		}()
+	}()
 
-		var stdin, stdout, stderr *os.File
-		var err error
+	var stdin, stdout, stderr *os.File
+	var err error
 
-		stdin, err = os.OpenFile(p.Stdin, syscall.O_RDONLY, 0)
+	stdin, err = os.OpenFile(p.Stdin, syscall.O_RDONLY, 0)
+	if err != nil {
+		glog.V(3).Infof("process setupIO: stdin opened %s %v", p.Stdin, err)
+		return err
+	}
+	glog.V(3).Infof("process setupIO: stdin opened %s", p.Stdin)
+
+	stdout, err = os.OpenFile(p.Stdout, syscall.O_RDWR, 0)
+	if err != nil {
+		glog.V(3).Infof("process setupIO: stdout opened %s %v", p.Stdout, err)
+		return err
+	}
+	glog.V(3).Infof("process setupIO: stdout opened %s", p.Stdout)
+
+	// Docker does not create stderr if it's a terminal process since at least 1.13+
+	// github.com/docker/containerd/containerd-shim/process.go:239
+	// This stanza keeps the API somewhat consistent
+	if st, err := os.Stat(p.Stderr); st != nil || !p.Spec.Terminal {
+		stderr, err = os.OpenFile(p.Stderr, syscall.O_RDWR, 0)
 		if err != nil {
+			glog.V(3).Infof("process setupIO: stderr opened %s %v", p.Stderr, err)
 			return err
 		}
+		glog.V(3).Infof("process setupIO: stderr opened %s", p.Stderr)
+	}
 
-		stdout, err = os.OpenFile(p.Stdout, syscall.O_RDWR, 0)
-		if err != nil {
-			return err
-		}
-
-		// Docker does not create stderr if it's a terminal process since at least 1.13+
-		// github.com/docker/containerd/containerd-shim/process.go:239
-		// This stanza keeps the API somewhat consistent
-		if st, err := os.Stat(p.Stderr); st != nil || !p.Spec.Terminal {
-			stderr, err = os.OpenFile(p.Stderr, syscall.O_RDWR, 0)
-			if err != nil {
-				return err
-			}
-		}
-
-		p.stdio = &hypervisor.TtyIO{
-			Stdin:  stdin,
-			Stdout: stdout,
-			Stderr: stderr,
-		}
+	p.stdio = &hypervisor.TtyIO{
+		Stdin:  stdin,
+		Stdout: stdout,
+		Stderr: stderr,
 	}
 	glog.V(3).Infof("process setupIO() successfully")
 
@@ -95,7 +91,7 @@ func (p *Process) ttyResize(container string, width, height int) error {
 func (p *Process) closeStdin() error {
 	var err error
 	if p.stdinCloser != nil {
-		logrus.Infof("close stdin closer %s", p.Id)
+		glog.Infof("close stdin closer %s", p.Id)
 		err = p.stdinCloser.Close()
 		p.stdinCloser = nil
 	}
