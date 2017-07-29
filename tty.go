@@ -11,6 +11,7 @@ import (
 	"github.com/hyperhq/runv/lib/term"
 	"github.com/opencontainers/runc/libcontainer/utils"
 	netcontext "golang.org/x/net/context"
+	"time"
 )
 
 func resizeTty(c types.APIClient, container, process string) {
@@ -38,11 +39,17 @@ func monitorTtySize(c types.APIClient, container, process string) {
 	resizeTty(c, container, process)
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGWINCH)
-	go func() {
-		for range sigchan {
-			resizeTty(c, container, process)
+	lastW := 0
+	lastH := 0
+	for <- time.Tick(time.Second * 2) {
+		if ws, err := term.GetWinsize(os.Stdin.Fd()); err == nil {
+			if ws.Width != lastW || ws.Height != lastH {
+				resizeTty(c, container, process)
+				lastW = ws.Width
+				lastH = ws.Height
+			}
 		}
-	}()
+	}
 }
 
 func sendtty(consoleSocket string, pty *os.File) error {
