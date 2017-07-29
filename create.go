@@ -292,7 +292,7 @@ func createContainer(context *cli.Context, container, namespace string, config *
 		return err
 	}
 
-	return ociCreate(context, container, "init", func(stdin, stdout, stderr string) error {
+	return ociCreate(context, container, "init", namespace, func(stdin, stdout, stderr string) error {
 		r := &types.CreateContainerRequest{
 			Id:         container,
 			Runtime:    "runv-create",
@@ -316,7 +316,7 @@ func createContainer(context *cli.Context, container, namespace string, config *
 
 }
 
-func ociCreate(context *cli.Context, container, process string, createFunc func(stdin, stdout, stderr string) error) error {
+func ociCreate(context *cli.Context, container, process, namespace string, createFunc func(stdin, stdout, stderr string) error) error {
 	path, err := osext.Executable()
 	if err != nil {
 		return fmt.Errorf("cannot find self executable path for %s: %v\n", os.Args[0], err)
@@ -346,7 +346,7 @@ func ociCreate(context *cli.Context, container, process string, createFunc func(
 		stderr = fmt.Sprintf("/proc/%d/fd/2", pid)
 	} else {
 		defer tty.Close()
-		streamDir := filepath.Join(context.GlobalString("root"), container, "stream")
+		streamDir := filepath.Join(namespace, container)
 		if _, ex := os.Stat(streamDir); ex != nil && os.IsNotExist(ex) {
 			os.MkdirAll(streamDir, 0755)
 		}
