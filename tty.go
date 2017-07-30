@@ -41,14 +41,17 @@ func monitorTtySize(c types.APIClient, container, process string, stopChan chan 
 	signal.Notify(sigchan, syscall.SIGWINCH)
 	lastW := uint16(0)
 	lastH := uint16(0)
-	select {
-	case <-stopChan:
-	case <-time.Tick(time.Second * 2):
-		if ws, err := term.GetWinsize(os.Stdin.Fd()); err == nil {
-			if ws.Width != lastW || ws.Height != lastH {
-				resizeTty(c, container, process)
-				lastW = ws.Width
-				lastH = ws.Height
+	for {
+		select {
+		case <-stopChan:
+		case <-time.Tick(time.Second * 2):
+			if ws, err := term.GetWinsize(os.Stdin.Fd()); err == nil {
+				//fmt.Printf("get win size %d %d, last is %d %d\n", ws.Width, ws.Height, lastW, lastH)
+				if ws.Width != lastW || ws.Height != lastH {
+					resizeTty(c, container, process)
+					lastW = ws.Width
+					lastH = ws.Height
+				}
 			}
 		}
 	}
