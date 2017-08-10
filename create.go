@@ -18,6 +18,9 @@ import (
 	"github.com/urfave/cli"
 	netcontext "golang.org/x/net/context"
 	"golang.org/x/sys/unix"
+	"bytes"
+	"strconv"
+	"encoding/json"
 )
 
 var createCommand = cli.Command{
@@ -87,7 +90,45 @@ func runContainer(context *cli.Context, createOnly bool) error {
 	}
 	_, err = os.Stat(filepath.Join(root, container))
 	if err == nil {
-		return fmt.Errorf("container %q exists", container)
+		_, err := getClient(filepath.Join(context.GlobalString("root"), container, "namespace/namespaced.sock"))
+		if err != nil && strings.Contains(err.Error(), "grpc: the connection is unavailable") {
+			//container already exit
+			ba, err := ioutil.ReadFile(filepath.Join(context.GlobalString("root"), container, "vm-root", "pidfile"))
+			if err == nil {
+				ba = bytes.TrimSpace(ba)
+				qemuPid, err := strconv.Atoi(string(ba))
+				if err == nil {
+					ba, err = ioutil.ReadFile(fmt.Sprintf("/proc/%d/stat", qemuPid))
+					if err ==  nil {
+						if bytes.Contains(ba, []byte("qemu")) {
+							p, err := os.FindProcess(qemuPid)
+							if err == nil && p != nil {
+								p.Kill()
+							}
+						}
+					}
+				}
+			}
+			state := &specs.State{}
+			f, err := os.OpenFile(filepath.Join(context.GlobalString("root"), container, "state.json"), os.O_RDONLY, 0)
+			if err == nil {
+				err = json.NewDecoder(f).Decode(state)
+				if err == nil {
+					ba, err = ioutil.ReadFile(fmt.Sprintf("/proc/%d/stat", state.Pid))
+					if err ==  nil {
+						if bytes.Contains(ba, []byte("runv")) {
+							p, err := os.FindProcess(state.Pid)
+							if err == nil && p != nil {
+								p.Kill()
+							}
+						}
+					}
+				}
+			}
+			os.RemoveAll(filepath.Join(context.GlobalString("root"), container))
+		} else {
+			return fmt.Errorf("container %q exists", container)
+		}
 	}
 	if err = checkConsole(context, &spec.Process, createOnly); err != nil {
 		return err
