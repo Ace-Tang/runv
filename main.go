@@ -169,6 +169,9 @@ func main() {
 }
 
 func getClient(address string) (types.APIClient, error) {
+	if _, ex := os.Stat(address); ex != nil {
+		return nil, fmt.Errorf("grpc.Dial error: address not exit %s", address)
+	}
 	// reset the logger for grpc to log to dev/null so that it does not mess with our stdio
 	grpclog.SetLogger(log.New(ioutil.Discard, "", log.LstdFlags))
 	dialOpts := []grpc.DialOption{grpc.WithInsecure(), grpc.WithTimeout(5 * time.Second)}

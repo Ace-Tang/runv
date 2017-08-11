@@ -91,7 +91,8 @@ func runContainer(context *cli.Context, createOnly bool) error {
 	_, err = os.Stat(filepath.Join(root, container))
 	if err == nil {
 		_, err := getClient(filepath.Join(context.GlobalString("root"), container, "namespace/namespaced.sock"))
-		if err != nil && strings.Contains(err.Error(), "grpc: the connection is unavailable") {
+		fmt.Println(filepath.Join(context.GlobalString("root"), container, "namespace/namespaced.sock"), err)
+		if err != nil && strings.Contains(err.Error(), "grpc.Dial error:") {
 			//container already exit
 			ba, err := ioutil.ReadFile(filepath.Join(context.GlobalString("root"), container, "vm-root", "pidfile"))
 			if err == nil {
