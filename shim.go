@@ -102,7 +102,7 @@ var shimCommand = cli.Command{
 				return cli.NewExitError(fmt.Sprintf("failed to set raw terminal: %v", err), -1)
 			}
 			defer term.RestoreTerminal(os.Stdin.Fd(), s)
-			monitorTtySize(c, container, process, stopChan)
+			go monitorTtySize(c, container, process, stopChan)
 		}
 
 		if context.Bool("proxy-signal") {
