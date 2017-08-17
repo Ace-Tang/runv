@@ -75,47 +75,70 @@ signal to the init process of the "ubuntu01" container:
 			Usage: "send the signal to all processes in the container",
 		},
 	},
-	Action: func(context *cli.Context) error {
-		container := context.Args().First()
-		if container == "" {
-			return cli.NewExitError("container id cannot be empty", -1)
-		}
+	Action: kill,
+}
 
-		sigstr := context.Args().Get(1)
-		if sigstr == "" {
-			sigstr = "SIGTERM"
-		}
-		signal, err := parseSignal(sigstr)
-		if err != nil {
-			return cli.NewExitError(fmt.Sprintf("parse signal failed %v, signal string:%s", err, sigstr), -1)
-		}
+var deleteCommand = cli.Command{
+	Name:  "delete",
+	Usage: "delete sends the specified signal (default: SIGTERM) to the container's init process",
+	ArgsUsage: `<container-id> <signal>
 
-		c, err := getClient(filepath.Join(context.GlobalString("root"), container, "namespace/namespaced.sock"))
-		if err != nil {
-			return cli.NewExitError(fmt.Sprintf("failed to get client: %v", err), -1)
-		}
+Where "<container-id>" is the name for the instance of the container and
+"<signal>" is the signal to be sent to the init process.
 
-		plist := make([]string, 0)
+For example, if the container id is "ubuntu01" the following will send a "KILL"
+signal to the init process of the "ubuntu01" container:
 
-		if context.Bool("all") {
-			if plist, err = getProcessList(c, container); err != nil {
-				return cli.NewExitError(fmt.Sprintf("can't get process list, %v", err), -1)
-			}
-		} else {
-			plist = append(plist, "init")
-		}
-
-		for _, p := range plist {
-			if _, err = c.Signal(netcontext.Background(), &types.SignalRequest{
-				Id:     container,
-				Pid:    p,
-				Signal: uint32(signal),
-			}); err != nil {
-				return cli.NewExitError(fmt.Sprintf("kill signal failed, %v", err), -1)
-			}
-		}
-		return nil
+       # runv kill ubuntu01 KILL`,
+	Flags: []cli.Flag{
+		cli.BoolFlag{
+			Name:  "all, a",
+			Usage: "send the signal to all processes in the container",
+		},
 	},
+	Action: kill,
+}
+
+func kill(context *cli.Context) error {
+	container := context.Args().First()
+	if container == "" {
+		return cli.NewExitError("container id cannot be empty", -1)
+	}
+
+	sigstr := context.Args().Get(1)
+	if sigstr == "" {
+		sigstr = "SIGTERM"
+	}
+	signal, err := parseSignal(sigstr)
+	if err != nil {
+		return cli.NewExitError(fmt.Sprintf("parse signal failed %v, signal string:%s", err, sigstr), -1)
+	}
+
+	c, err := getClient(filepath.Join(context.GlobalString("root"), container, "namespace/namespaced.sock"))
+	if err != nil {
+		return cli.NewExitError(fmt.Sprintf("failed to get client: %v", err), -1)
+	}
+
+	plist := make([]string, 0)
+
+	if context.Bool("all") {
+		if plist, err = getProcessList(c, container); err != nil {
+			return cli.NewExitError(fmt.Sprintf("can't get process list, %v", err), -1)
+		}
+	} else {
+		plist = append(plist, "init")
+	}
+
+	for _, p := range plist {
+		if _, err = c.Signal(netcontext.Background(), &types.SignalRequest{
+			Id:     container,
+			Pid:    p,
+			Signal: uint32(signal),
+		}); err != nil {
+			return cli.NewExitError(fmt.Sprintf("kill signal failed, %v", err), -1)
+		}
+	}
+	return nil
 }
 
 func getProcessList(c types.APIClient, container string) ([]string, error) {
