@@ -431,16 +431,18 @@ func (hp *HyperPod) createContainer(container, bundlePath, stdin, stdout, stderr
 		return nil, fmt.Errorf("The process id: %s is in used", inerProcessId)
 	}
 
+	manager, err := newCgManager(spec, usedSystemdCgroup)
+	if err != nil {
+		return nil, err
+	}
+
 	c := &Container{
 		Id:         container,
 		BundlePath: bundlePath,
 		Spec:       spec,
 		Processes:  make(map[string]*Process),
 		ownerPod:   hp,
-	}
-	if manager, err := newCgManager(spec, usedSystemdCgroup); err == nil {
-		c.CgManager = manager
-		glog.Infof("CgManager driver is systemd: %v", usedSystemdCgroup)
+		CgManager:  manager,
 	}
 
 	hp.Containers[container] = c
@@ -616,7 +618,12 @@ func createCgroupConfig(spec *specs.Spec, usedSystemdCgroup bool) (*configs.Cgro
 		}
 	}
 
+	glog.Infof("cgroup path %v", myCgroupPath)
+	glog.Infof("CgManager driver is systemd: %v", usedSystemdCgroup)
 	if usedSystemdCgroup {
+		if !systemd.UseSystemd() {
+			return nil, fmt.Errorf("systemd cgroup flag passed, but systemd support for managing cgroups is not available")
+		}
 		if myCgroupPath == "" {
 			c.Parent = "system.slice"
 			c.ScopePrefix = "runv"
@@ -628,7 +635,6 @@ func createCgroupConfig(spec *specs.Spec, usedSystemdCgroup bool) (*configs.Cgro
 			if len(parts) != 3 {
 				return nil, fmt.Errorf("expected cgroupsPath to be of format \"slice:prefix:name\" for systemd cgroups")
 			}
-			glog.Infof("cgroup path %+v", parts)
 			c.Parent = parts[0]
 			c.ScopePrefix = parts[1]
 			c.Name = parts[2]
