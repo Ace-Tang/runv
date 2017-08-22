@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,6 +20,7 @@ import (
 	"github.com/kardianos/osext"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/vishvananda/netlink"
+	"golang.org/x/sys/unix"
 )
 
 type NetlinkUpdateType string
@@ -384,7 +386,39 @@ func (hp *HyperPod) getNsPid() int {
 		return -1
 	}
 
-	return hp.nslistener.cmd.Process.Pid
+	procPath, ex := ioutil.TempDir("", "runv-containerd")
+	if ex != nil {
+		glog.Errorf("error create temp dir %v", ex)
+		return hp.nslistener.cmd.Process.Pid
+	}
+
+	defer os.RemoveAll(procPath)
+
+	if e := unix.Mount("proc", procPath,
+		"proc", unix.MS_NOSUID|unix.MS_NODEV|unix.MS_NOEXEC, ""); e != nil {
+		glog.Errorf("mount %s error %v", procPath, e)
+	} else {
+		defer unix.Unmount(procPath, unix.MNT_DETACH)
+	}
+
+	pid := hp.nslistener.cmd.Process.Pid
+	ba, e := ioutil.ReadFile(fmt.Sprintf("%s/%d/sched", procPath, pid))
+	if e != nil {
+		glog.Errorf("read file error. %s %v", fmt.Sprintf("/proc/%d/sched", e))
+		return pid
+	}
+	s := string(ba)
+	start := strings.Index(s, "(")
+	end := strings.Index(s[start:], ",")
+	if start > 0 && end > 0 {
+		end = start + end
+		if newPid, ex := strconv.Atoi(s[start+1 : end]); ex == nil {
+			return newPid
+		} else {
+			glog.Errorf("parse pid error %s %v %s", s[start+1:end], ex, s)
+		}
+	}
+	return pid
 }
 
 func (hp *HyperPod) createContainer(container, bundlePath, stdin, stdout, stderr string, spec *specs.Spec) (*Container, error) {

@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/golang/glog"
@@ -144,12 +143,6 @@ func launchQemu(qc *QemuContext, ctx *hypervisor.VmContext) {
 	stderr := bytes.NewBuffer([]byte{})
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
-	sp := cmd.SysProcAttr
-	if sp == nil {
-		sp = &syscall.SysProcAttr{}
-	}
-	sp.Cloneflags = sp.Cloneflags | uintptr(syscall.CLONE_NEWPID)
-	cmd.SysProcAttr = sp
 
 	err := cmd.Run()
 

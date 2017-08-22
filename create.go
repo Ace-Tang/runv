@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"bytes"
+	"encoding/json"
 	"github.com/Sirupsen/logrus"
 	"github.com/hyperhq/runv/containerd/api/grpc/types"
 	"github.com/kardianos/osext"
@@ -18,9 +20,7 @@ import (
 	"github.com/urfave/cli"
 	netcontext "golang.org/x/net/context"
 	"golang.org/x/sys/unix"
-	"bytes"
 	"strconv"
-	"encoding/json"
 )
 
 var createCommand = cli.Command{
@@ -100,7 +100,7 @@ func runContainer(context *cli.Context, createOnly bool) error {
 				qemuPid, err := strconv.Atoi(string(ba))
 				if err == nil {
 					ba, err = ioutil.ReadFile(fmt.Sprintf("/proc/%d/stat", qemuPid))
-					if err ==  nil {
+					if err == nil {
 						if bytes.Contains(ba, []byte("qemu")) {
 							p, err := os.FindProcess(qemuPid)
 							if err == nil && p != nil {
@@ -116,7 +116,7 @@ func runContainer(context *cli.Context, createOnly bool) error {
 				err = json.NewDecoder(f).Decode(state)
 				if err == nil {
 					ba, err = ioutil.ReadFile(fmt.Sprintf("/proc/%d/stat", state.Pid))
-					if err ==  nil {
+					if err == nil {
 						if bytes.Contains(ba, []byte("runv")) {
 							p, err := os.FindProcess(state.Pid)
 							if err == nil && p != nil {
@@ -254,6 +254,13 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			Setsid: true,
 		}
+
+		sp := cmd.SysProcAttr
+		if sp == nil {
+			sp = &syscall.SysProcAttr{}
+		}
+		sp.Cloneflags = sp.Cloneflags | uintptr(syscall.CLONE_NEWPID)
+		cmd.SysProcAttr = sp
 
 		logFile2, ex := os.OpenFile(filepath.Join("/var/log/runv", container, "containerd.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if ex != nil {
