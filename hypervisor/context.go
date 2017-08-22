@@ -64,6 +64,8 @@ type VmContext struct {
 	idLock    sync.Mutex
 	pauseLock sync.Mutex
 	closeOnce sync.Once
+
+	QemuPid int
 }
 
 type stateHandler func(ctx *VmContext, event VmEvent)

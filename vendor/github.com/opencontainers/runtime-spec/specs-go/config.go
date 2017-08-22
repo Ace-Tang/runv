@@ -59,6 +59,7 @@ type Process struct {
 // LinuxCapabilities specifies the whitelist of capabilities that are kept for a process.
 // http://man7.org/linux/man-pages/man7/capabilities.7.html
 type LinuxCapabilities []string
+
 //type LinuxCapabilities struct {
 //	// Bounding is the set of capabilities checked by the kernel.
 //	Bounding []string `json:"bounding,omitempty" platform:"linux"`
@@ -155,7 +156,7 @@ type Linux struct {
 	// CgroupsPath specifies the path to cgroups that are created and/or joined by the container.
 	// The path is expected to be relative to the cgroups mountpoint.
 	// If resources are specified, the cgroups at CgroupsPath will be updated based on resources.
-	CgroupsPath string `json:"cgroupsPath,omitempty"`
+	CgroupsPath *string `json:"cgroupsPath,omitempty"`
 	// Namespaces contains the namespaces that are created and/or joined by the container
 	Namespaces []LinuxNamespace `json:"namespaces,omitempty"`
 	// Devices are a list of device nodes that are created for the container

@@ -218,6 +218,8 @@ func launchQemu(qc *QemuContext, ctx *hypervisor.VmContext) {
 		ctx.Hub <- &hypervisor.VmStartFailEvent{Message: "watch qemu process failed"}
 		return
 	}
+
+	ctx.QemuPid = int(pid)
 }
 
 func associateQemu(ctx *hypervisor.VmContext) {

@@ -17,7 +17,8 @@ import (
 	"github.com/hyperhq/runv/api"
 	"github.com/hyperhq/runv/hypervisor"
 	"github.com/hyperhq/runv/lib/utils"
-	"github.com/opencontainers/runtime-spec/specs-go"
+	"github.com/opencontainers/runc/libcontainer/cgroups"
+	specs "github.com/opencontainers/runtime-spec/specs-go"
 )
 
 type Container struct {
@@ -27,6 +28,8 @@ type Container struct {
 	Processes  map[string]*Process
 
 	ownerPod *HyperPod
+
+	CgManager cgroups.Manager
 }
 
 func (c *Container) start(p *Process) error {
@@ -163,6 +166,10 @@ func (c *Container) create() error {
 	if err := os.Symlink(vmRootPath, vmRootLinkPath); err != nil {
 		return fmt.Errorf("failed to create symbol link %q: %v", vmRootLinkPath, err)
 	}
+
+	// add pid into cgroup
+	glog.Infof("qemu pid %v", c.ownerPod.vm.GetQemuPid())
+	c.CgManager.Apply(c.ownerPod.vm.GetQemuPid())
 
 	err = execPrestartHooks(c.Spec, state)
 	if err != nil {

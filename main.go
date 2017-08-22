@@ -126,6 +126,10 @@ func main() {
 			Name:  "vbox",
 			Usage: "runv-compatible boot ISO for the container for vbox driver",
 		},
+		cli.BoolFlag{
+			Name:  "systemd-cgroup",
+			Usage: "enable systemd cgroup support, expects cgroupsPath to be of form \"slice:prefix:name\" for e.g. \"system.slice:runc:434234\"",
+		},
 	}
 	app.Before = func(context *cli.Context) error {
 		logdir := context.GlobalString("log_dir")

@@ -1,26 +1,26 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
-	"bytes"
-	"encoding/json"
 	"github.com/Sirupsen/logrus"
 	"github.com/hyperhq/runv/containerd/api/grpc/types"
 	"github.com/kardianos/osext"
 	"github.com/kr/pty"
-	"github.com/opencontainers/runtime-spec/specs-go"
+	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/urfave/cli"
 	netcontext "golang.org/x/net/context"
 	"golang.org/x/sys/unix"
-	"strconv"
 )
 
 var createCommand = cli.Command{
@@ -229,6 +229,9 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		}
 		if context.GlobalIsSet("driver") {
 			args = append(args, "--driver", context.GlobalString("driver"))
+		}
+		if context.GlobalBool("systemd-cgroup") {
+			args = append(args, "--systemd-cgroup")
 		}
 		for _, goption := range []string{"log_dir", "template"} {
 			if context.GlobalIsSet(goption) {

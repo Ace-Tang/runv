@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/golang/glog"
 	"github.com/hyperhq/runv/factory"
-	"github.com/opencontainers/runtime-spec/specs-go"
-	"github.com/Sirupsen/logrus"
+	specs "github.com/opencontainers/runtime-spec/specs-go"
 )
 
 type Supervisor struct {
@@ -25,9 +25,11 @@ type Supervisor struct {
 
 	sync.RWMutex // Protects Supervisor.Containers, HyperPod.Containers, HyperPod.Processes, Container.Processes
 	Containers   map[string]*Container
+
+	UsedSystemdCgroup bool
 }
 
-func New(stateDir, eventLogDir string, f factory.Factory, defaultCpus int, defaultMemory int) (*Supervisor, error) {
+func New(stateDir, eventLogDir string, f factory.Factory, defaultCpus int, defaultMemory int, usedSystemdCgroup bool) (*Supervisor, error) {
 	if err := os.MkdirAll(stateDir, 0755); err != nil {
 		return nil, err
 	}
@@ -41,11 +43,12 @@ func New(stateDir, eventLogDir string, f factory.Factory, defaultCpus int, defau
 		return nil, fmt.Errorf("defaultMemory must be greater than 0.")
 	}
 	sv := &Supervisor{
-		StateDir:      stateDir,
-		Factory:       f,
-		defaultCpus:   defaultCpus,
-		defaultMemory: defaultMemory,
-		Containers:    make(map[string]*Container),
+		StateDir:          stateDir,
+		Factory:           f,
+		defaultCpus:       defaultCpus,
+		defaultMemory:     defaultMemory,
+		Containers:        make(map[string]*Container),
+		UsedSystemdCgroup: usedSystemdCgroup,
 	}
 	sv.Events.subscribers = make(map[chan Event]struct{})
 	go sv.reaper()
@@ -67,7 +70,7 @@ func (sv *Supervisor) CreateContainer(container, bundlePath, stdin, stdout, stde
 	if err != nil {
 		return nil, err
 	}
-	c, err = hp.createContainer(container, bundlePath, stdin, stdout, stderr, spec)
+	c, err = hp.createContainer(container, bundlePath, stdin, stdout, stderr, spec, sv.UsedSystemdCgroup)
 	if err != nil {
 		return nil, err
 	}
