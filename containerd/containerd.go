@@ -144,7 +144,7 @@ var ContainerdCommand = cli.Command{
 			f = singlefactory.Dummy(bootConfig)
 		}
 		sv, err := supervisor.New(stateDir, containerdDir, f,
-			context.GlobalInt("default_cpus"), context.GlobalInt("default_memory"), context.GlobalBool("systemd-cgroup"))
+			context.GlobalInt("default_cpus"), context.GlobalInt("default_memory"), context.GlobalBool("systemd-cgroup"), os.Getpid())
 		if err != nil {
 			glog.Errorf("%v", err)
 			return cli.NewExitError(err.Error(), -1)

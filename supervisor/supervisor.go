@@ -11,6 +11,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/golang/glog"
 	"github.com/hyperhq/runv/factory"
+	runcutils "github.com/opencontainers/runc"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 )
 
@@ -27,9 +28,10 @@ type Supervisor struct {
 	Containers   map[string]*Container
 
 	UsedSystemdCgroup bool
+	CtrdPid           int
 }
 
-func New(stateDir, eventLogDir string, f factory.Factory, defaultCpus int, defaultMemory int, usedSystemdCgroup bool) (*Supervisor, error) {
+func New(stateDir, eventLogDir string, f factory.Factory, defaultCpus int, defaultMemory int, usedSystemdCgroup bool, pid int) (*Supervisor, error) {
 	if err := os.MkdirAll(stateDir, 0755); err != nil {
 		return nil, err
 	}
@@ -49,6 +51,7 @@ func New(stateDir, eventLogDir string, f factory.Factory, defaultCpus int, defau
 		defaultMemory:     defaultMemory,
 		Containers:        make(map[string]*Container),
 		UsedSystemdCgroup: usedSystemdCgroup,
+		CtrdPid:           pid,
 	}
 	sv.Events.subscribers = make(map[chan Event]struct{})
 	go sv.reaper()
@@ -66,11 +69,12 @@ func (sv *Supervisor) CreateContainer(container, bundlePath, stdin, stdout, stde
 	}()
 	sv.Lock()
 	defer sv.Unlock()
+
 	hp, err := sv.getHyperPod(container, spec)
 	if err != nil {
 		return nil, err
 	}
-	c, err = hp.createContainer(container, bundlePath, stdin, stdout, stderr, spec, sv.UsedSystemdCgroup)
+	c, err = hp.createContainer(container, bundlePath, stdin, stdout, stderr, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -228,6 +232,15 @@ func (sv *Supervisor) getHyperPod(container string, spec *specs.Spec) (hp *Hyper
 	}
 	if hp == nil {
 		// use 'func() + defer' to ensure we regain the lock when createHyperPod() panic.
+		// cgroup control hyperpod， resource limit only come from first container in pod
+		// add containerd pid into cgroup
+		glog.Infof("app first created pod into cgroup, containerd pid %v", sv.CtrdPid)
+		cgManager, err := runcutils.NewCgManager(spec, sv.UsedSystemdCgroup)
+		if err != nil {
+			return nil, err
+		}
+		cgManager.Apply(sv.CtrdPid)
+
 		func() {
 			sv.Unlock()
 			defer sv.Lock()
@@ -238,6 +251,7 @@ func (sv *Supervisor) getHyperPod(container string, spec *specs.Spec) (hp *Hyper
 			return nil, err
 		}
 		hp.sv = sv
+		hp.CgManager = cgManager
 		// recheck existed
 		if _, ok := sv.Containers[container]; ok {
 			go hp.reap()

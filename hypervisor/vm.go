@@ -33,10 +33,6 @@ type Vm struct {
 	clients *Fanout
 }
 
-func (v *Vm) GetQemuPid() int {
-	return v.ctx.QemuPid
-}
-
 func (v *Vm) LogLevel(level hlog.LogLevel) bool {
 	return hlog.IsLogLevel(level)
 }
