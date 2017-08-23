@@ -10,6 +10,11 @@ import (
 	"github.com/hyperhq/runv/hypervisor"
 )
 
+var (
+	QemuVersion  = "vlinux"
+	vlinuxKernel = "/opt/vlinux/2.2.4/container_data/vmlinux.container"
+)
+
 const (
 	QEMU_SYSTEM_EXE = "qemu-system-x86_64"
 )
@@ -34,6 +39,16 @@ func (qc *QemuContext) arguments(ctx *hypervisor.VmContext) []string {
 	cmdline := "console=ttyS0 panic=1 no_timer_check"
 	params := []string{
 		"-machine", machineClass + ",accel=kvm,usb=off", "-global", "kvm-pit.lost_tick_policy=discard", "-cpu", "host"}
+
+	if QemuVersion == "vlinux" {
+		machineClass = "pc-lite"
+		cmdline = "root=/dev/pmem0p1 rootflags=dax,data=ordered,errors=remount-ro rw rootfstype=ext4 tsc=reliable no_timer_check rcupdate.rcu_expedited=1 i8042.direct=1 i8042.dumbkbd=1 i8042.nopnp=1 i8042.noaux=1 noreplace-smp reboot=k panic=1 console=hvc0 console=hvc1 console=hvc2 console=hvc3 initcall_debug init=/usr/lib/systemd/systemd systemd.unit=cc-agent.target iommu=off quiet systemd.mask=systemd-networkd.service systemd.mask=systemd-networkd.socket systemd.show_status=false cryptomgr.notests"
+		boot.Kernel = vlinuxKernel
+		params = []string{
+			"-machine", machineClass + ",accel=kvm,kernel_irqchip,nvdimm", "-device", "nvdimm,memdev=mem0,id=nv0",
+			"-object", "memory-backend-file,id=mem0,mem-path=/opt/vlinux/2.2.4/container_data/clear-containers.img,size=235929600",
+			"-global", "kvm-pit.lost_tick_policy=discard", "-cpu", "host"}
+	}
 	if _, err := os.Stat("/dev/kvm"); os.IsNotExist(err) {
 		glog.V(1).Info("kvm not exist change to no kvm mode")
 		params = []string{"-machine", machineClass + ",usb=off", "-cpu", "core2duo"}
@@ -53,7 +68,10 @@ func (qc *QemuContext) arguments(ctx *hypervisor.VmContext) []string {
 			"-drive", fmt.Sprintf("if=pflash,file=%s,readonly=on", boot.Cbfs))
 	} else {
 		params = append(params,
-			"-kernel", boot.Kernel, "-initrd", boot.Initrd, "-append", cmdline)
+			"-kernel", boot.Kernel, "-append", cmdline)
+		if QemuVersion != "vlinux" {
+			params = append(params, "-initrd", boot.Initrd)
+		}
 	}
 
 	params = append(params,
@@ -76,13 +94,34 @@ func (qc *QemuContext) arguments(ctx *hypervisor.VmContext) []string {
 		params = append(params, "-numa", nodeConfig)
 	}
 
-	return append(params, "-qmp", fmt.Sprintf("unix:%s,server,nowait", qc.qmpSockName), "-serial", fmt.Sprintf("unix:%s,server,nowait", ctx.ConsoleSockName),
-		"-device", "virtio-serial-pci,id=virtio-serial0,bus=pci.0,addr=0x2", "-device", "virtio-scsi-pci,id=scsi0,bus=pci.0,addr=0x3",
-		"-chardev", fmt.Sprintf("socket,id=charch0,path=%s,server,nowait", ctx.HyperSockName),
-		"-device", "virtserialport,bus=virtio-serial0.0,nr=1,chardev=charch0,id=channel0,name=sh.hyper.channel.0",
-		"-chardev", fmt.Sprintf("socket,id=charch1,path=%s,server,nowait", ctx.TtySockName),
-		"-device", "virtserialport,bus=virtio-serial0.0,nr=2,chardev=charch1,id=channel1,name=sh.hyper.channel.1",
-		"-fsdev", fmt.Sprintf("local,id=virtio9p,path=%s,security_model=none", ctx.ShareDir),
-		"-device", fmt.Sprintf("virtio-9p-pci,fsdev=virtio9p,mount_tag=%s", hypervisor.ShareDirTag),
-	)
+	if QemuVersion == "vlinux" {
+		params = append(params, "-qmp", fmt.Sprintf("unix:%s,server,nowait", qc.qmpSockName),
+			"-device", "virtio-serial-pci,id=virtio-serial0", "-device", "virtio-scsi-pci,id=scsi0",
+
+			"-device", "virtconsole,chardev=charconsole1,id=console1",
+			"-chardev", fmt.Sprintf("socket,id=charconsole1,path=%s,server,nowait", ctx.ConsoleSockName),
+			// hyperstart channel
+			"-chardev", fmt.Sprintf("socket,id=charch1,path=%s,server,nowait", ctx.TtySockName),
+			"-device", "virtserialport,bus=virtio-serial0.0,nr=2,chardev=charch1,id=channel1,name=sh.hyper.channel.1",
+			"-chardev", fmt.Sprintf("socket,id=charch0,path=%s,server,nowait", ctx.HyperSockName),
+			"-device", "virtserialport,bus=virtio-serial0.0,nr=1,chardev=charch0,id=channel0,name=sh.hyper.channel.0",
+
+			"-fsdev", fmt.Sprintf("local,id=virtio9p,path=%s,security_model=none", ctx.ShareDir),
+			"-device", fmt.Sprintf("virtio-9p-pci,fsdev=virtio9p,mount_tag=%s", hypervisor.ShareDirTag),
+		)
+
+	} else {
+
+		params = append(params, "-qmp", fmt.Sprintf("unix:%s,server,nowait", qc.qmpSockName), "-serial", fmt.Sprintf("unix:%s,server,nowait", ctx.ConsoleSockName),
+			"-device", "virtio-serial-pci,id=virtio-serial0,bus=pci.0,addr=0x2", "-device", "virtio-scsi-pci,id=scsi0,bus=pci.0,addr=0x3",
+			"-chardev", fmt.Sprintf("socket,id=charch0,path=%s,server,nowait", ctx.HyperSockName),
+			"-device", "virtserialport,bus=virtio-serial0.0,nr=1,chardev=charch0,id=channel0,name=sh.hyper.channel.0",
+			"-chardev", fmt.Sprintf("socket,id=charch1,path=%s,server,nowait", ctx.TtySockName),
+			"-device", "virtserialport,bus=virtio-serial0.0,nr=2,chardev=charch1,id=channel1,name=sh.hyper.channel.1",
+			"-fsdev", fmt.Sprintf("local,id=virtio9p,path=%s,security_model=none", ctx.ShareDir),
+			"-device", fmt.Sprintf("virtio-9p-pci,fsdev=virtio9p,mount_tag=%s", hypervisor.ShareDirTag),
+		)
+	}
+
+	return params
 }

@@ -212,6 +212,7 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		args := []string{
 			"--default_cpus", parseSpecCpus(context, spec),
 			"--default_memory", parseSpecMem(context, spec),
+			"--qemu-version", context.GlobalString("qemu-version"),
 		}
 
 		// if bios+cbfs exist, use them first.

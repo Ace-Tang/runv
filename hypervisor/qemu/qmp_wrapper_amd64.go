@@ -39,6 +39,9 @@ func newNetworkAddSession(ctx *hypervisor.VmContext, qc *QemuContext, id string,
 			"id":     device,
 		},
 	}
+	if QemuVersion == "vlinux" {
+		commands[2].Arguments["bus"] = "pcie.0"
+	}
 
 	qc.qmp <- &QmpSession{
 		commands: commands,
