@@ -524,7 +524,8 @@ func parseSpecCpus(context *cli.Context, spec *specs.Spec) string {
 func parseSpecMem(context *cli.Context, spec *specs.Spec) string {
 	default_memory := fmt.Sprintf("%d", context.GlobalInt("default_memory"))
 	if spec.Linux.Resources.Memory.Limit == nil {
-		*spec.Linux.Resources.Memory.Limit = uint64(context.GlobalInt("default_memory") * 1024 * 1024)
+		limit := uint64(context.GlobalInt("default_memory") * 1024 * 1024)
+		spec.Linux.Resources.Memory.Limit = &limit
 		return default_memory
 	}
 
