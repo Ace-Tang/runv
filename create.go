@@ -210,8 +210,8 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		logrus.Infof("create container in namespace path %s %s", container, filepath.Join(namespace, "namespaced.sock"))
 
 		args := []string{
-			"--default_cpus", fmt.Sprintf("%d", context.GlobalInt("default_cpus")),
-			"--default_memory", fmt.Sprintf("%d", context.GlobalInt("default_memory")),
+			"--default_cpus", parseSpecCpus(context, spec),
+			"--default_memory", parseSpecMem(context, spec),
 		}
 
 		// if bios+cbfs exist, use them first.
@@ -480,4 +480,53 @@ func createPidFile(path string, pid int) error {
 		return err
 	}
 	return os.Rename(tmpName, path)
+}
+
+func parseSpecCpus(context *cli.Context, spec *specs.Spec) string {
+	default_cpus := fmt.Sprintf("%d", context.GlobalInt("default_cpus"))
+
+	if spec.Linux.Resources.CPU.Cpus == nil {
+		return default_cpus
+	}
+	cpus := *spec.Linux.Resources.CPU.Cpus
+
+	cnt := 0
+	for _, elem := range strings.Split(cpus, ",") {
+		arrs := strings.Split(elem, "-")
+		if len(arrs) != 1 && len(arrs) != 2 {
+			logrus.Errorf("parse spec.cpus error: %v", cpus)
+			return default_cpus
+		} else if len(arrs) == 2 {
+			f, err := strconv.Atoi(arrs[0])
+			if err != nil {
+				logrus.Errorf("parse spec.cpus error: %v", err)
+				return default_cpus
+			}
+			l, err := strconv.Atoi(arrs[1])
+			if err != nil {
+				logrus.Errorf("parse spec.cpus error: %v", err)
+				return default_cpus
+			}
+
+			cnt += l - f + 1
+		} else {
+			cnt++
+		}
+	}
+
+	if cnt < 0 {
+		return default_cpus
+	}
+
+	return strconv.Itoa(cnt)
+}
+
+func parseSpecMem(context *cli.Context, spec *specs.Spec) string {
+	default_memory := fmt.Sprintf("%d", context.GlobalInt("default_memory"))
+	if spec.Linux.Resources.Memory.Limit == nil {
+		*spec.Linux.Resources.Memory.Limit = uint64(context.GlobalInt("default_memory") * 1024 * 1024)
+		return default_memory
+	}
+
+	return strconv.Itoa(int(*spec.Linux.Resources.Memory.Limit / 1024 / 1024))
 }

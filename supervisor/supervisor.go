@@ -235,11 +235,12 @@ func (sv *Supervisor) getHyperPod(container string, spec *specs.Spec) (hp *Hyper
 		// cgroup control hyperpod， resource limit only come from first container in pod
 		// add containerd pid into cgroup
 		glog.Infof("app first created pod into cgroup, containerd pid %v", sv.CtrdPid)
-		cgManager, err := runcutils.NewCgManager(spec, sv.UsedSystemdCgroup)
+		cgManager, config, err := runcutils.NewCgManager(spec, sv.UsedSystemdCgroup)
 		if err != nil {
 			return nil, err
 		}
 		cgManager.Apply(sv.CtrdPid)
+		cgManager.Set(config)
 
 		func() {
 			sv.Unlock()
@@ -252,6 +253,7 @@ func (sv *Supervisor) getHyperPod(container string, spec *specs.Spec) (hp *Hyper
 		}
 		hp.sv = sv
 		hp.CgManager = cgManager
+		hp.config = config
 		// recheck existed
 		if _, ok := sv.Containers[container]; ok {
 			go hp.reap()

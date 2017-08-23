@@ -225,9 +225,9 @@ type LinuxRlimit struct {
 // LinuxHugepageLimit structure corresponds to limiting kernel hugepages
 type LinuxHugepageLimit struct {
 	// Pagesize is the hugepage size
-	Pagesize string `json:"pageSize"`
+	Pagesize *string `json:"pageSize"`
 	// Limit is the limit of "hugepagesize" hugetlb usage
-	Limit uint64 `json:"limit"`
+	Limit *uint64 `json:"limit"`
 }
 
 // LinuxInterfacePriority for network interfaces
@@ -259,7 +259,7 @@ type LinuxWeightDevice struct {
 type LinuxThrottleDevice struct {
 	linuxBlockIODevice
 	// Rate is the IO rate limit per cgroup per device
-	Rate uint64 `json:"rate"`
+	Rate *uint64 `json:"rate"`
 }
 
 // LinuxBlockIO for Linux cgroup 'blkio' resource management
@@ -278,6 +278,17 @@ type LinuxBlockIO struct {
 	ThrottleReadIOPSDevice []LinuxThrottleDevice `json:"blkioThrottleReadIOPSDevice,omitempty"`
 	// IO write rate limit per cgroup per device, IO per second
 	ThrottleWriteIOPSDevice []LinuxThrottleDevice `json:"blkioThrottleWriteIOPSDevice,omitempty"`
+	// buffer IO write rate limit per cgroup per device, bytes per second
+	ThrottleBufferWriteBpsDevice []LinuxThrottleDevice
+
+	// IO read rate lowest limit per cgroup per device, bytes per second
+	ThrottleReadLowBpsDevice []LinuxThrottleDevice `json:"blkioThrottleReadLowBpsDevice,omitempty"`
+	// IO read rate lowest limit per cgroup per device, IO per second
+	ThrottleReadLowIOpsDevice []LinuxThrottleDevice `json:"blkioThrottleReadLowIOPSDevice,omitempty"`
+	// IO write rate lowest limit per cgroup per device, bytes per second
+	ThrottleWriteLowBpsDevice []LinuxThrottleDevice `json:"blkioThrottleWriteLowBpsDevice,omitempty"`
+	// IO write rate lowest limit per cgroup per device, IO per second
+	ThrottleWriteLowIOpsDevice []LinuxThrottleDevice `json:"blkioThrottleWriteLowIOPSDevice,omitempty"`
 }
 
 // LinuxMemory for Linux cgroup 'memory' resource management
@@ -309,15 +320,15 @@ type LinuxCPU struct {
 	// CPU period to be used for realtime scheduling (in usecs).
 	RealtimePeriod *uint64 `json:"realtimePeriod,omitempty"`
 	// CPUs to use within the cpuset. Default is to use any CPU available.
-	Cpus string `json:"cpus,omitempty"`
+	Cpus *string `json:"cpus,omitempty"`
 	// List of memory nodes in the cpuset. Default is to use any available memory node.
-	Mems string `json:"mems,omitempty"`
+	Mems *string `json:"mems,omitempty"`
 }
 
 // LinuxPids for Linux cgroup 'pids' resource management (Linux 4.3)
 type LinuxPids struct {
 	// Maximum number of PIDs. Default is "no limit".
-	Limit int64 `json:"limit"`
+	Limit *int64 `json:"limit"`
 }
 
 // LinuxNetwork identification and priority configuration

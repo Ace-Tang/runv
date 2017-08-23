@@ -19,6 +19,7 @@ import (
 	"github.com/hyperhq/runv/hypervisor"
 	"github.com/kardianos/osext"
 	"github.com/opencontainers/runc/libcontainer/cgroups"
+	"github.com/opencontainers/runc/libcontainer/configs"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/vishvananda/netlink"
 	"golang.org/x/sys/unix"
@@ -58,6 +59,7 @@ type HyperPod struct {
 	nslistener *nsListener
 
 	CgManager cgroups.Manager // cgroup control pod
+	config    *configs.Config
 }
 
 type InterfaceInfo struct {
