@@ -130,6 +130,11 @@ func main() {
 			Name:  "systemd-cgroup",
 			Usage: "enable systemd cgroup support, expects cgroupsPath to be of form \"slice:prefix:name\" for e.g. \"system.slice:runc:434234\"",
 		},
+		cli.StringFlag{
+			Name:  "qemu-version",
+			Value: "vlinux",
+			Usage: "qemu support, qemu or vlinux",
+		},
 	}
 	app.Before = func(context *cli.Context) error {
 		logdir := context.GlobalString("log_dir")

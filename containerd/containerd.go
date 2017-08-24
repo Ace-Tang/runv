@@ -19,6 +19,7 @@ import (
 	singlefactory "github.com/hyperhq/runv/factory/single"
 	templatefactory "github.com/hyperhq/runv/factory/template"
 	"github.com/hyperhq/runv/hypervisor"
+	"github.com/hyperhq/runv/hypervisor/qemu"
 	"github.com/hyperhq/runv/supervisor"
 	templatecore "github.com/hyperhq/runv/template"
 	"github.com/urfave/cli"
@@ -84,10 +85,14 @@ var ContainerdCommand = cli.Command{
 		cbfs := context.GlobalString("cbfs")
 		vsock := context.GlobalBool("vsock")
 		template := context.GlobalString("template")
+		qemuVersion := context.GlobalString("qemu-version")
 		stateDir := context.String("state-dir")
 		containerdDir := context.String("containerd-dir")
 		if containerdDir == "" {
 			containerdDir = stateDir
+		}
+		if qemuVersion != "vlinux" {
+			qemu.QemuVersion = qemuVersion
 		}
 
 		var tconfig *templatecore.TemplateVmConfig
