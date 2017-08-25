@@ -370,6 +370,11 @@ func createContainer(context *cli.Context, container, namespace string, config *
 }
 
 func ociCreate(context *cli.Context, container, process, namespace string, createFunc func(stdin, stdout, stderr string) error) error {
+	logFile, ex := os.OpenFile(filepath.Join("/var/log/runv", container, "create.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if ex != nil {
+		return ex
+	}
+	logrus.SetOutput(logFile)
 	path, err := osext.Executable()
 	if err != nil {
 		return fmt.Errorf("cannot find self executable path for %s: %v\n", os.Args[0], err)
