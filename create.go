@@ -188,7 +188,7 @@ func runContainer(context *cli.Context, createOnly bool) error {
 			return fmt.Errorf("cannot find self executable path for %s: %v", os.Args[0], err)
 		}
 
-		kernel, initrd, bios, cbfs, err := getKernelFiles(context, spec.Root.Path)
+		kernel, initrd, bios, cbfs, memPath, err := getKernelFiles(context, spec.Root.Path)
 		if err != nil {
 			return fmt.Errorf("can't find kernel/initrd/bios/cbfs files")
 		}
@@ -223,6 +223,9 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		} else {
 			fmt.Fprintf(os.Stderr, "either bios+cbfs or kernel+initrd must be specified")
 			os.Exit(-1)
+		}
+		if memPath != "" {
+			args = append(args, "--mem-path", memPath)
 		}
 
 		if context.GlobalBool("debug") {
