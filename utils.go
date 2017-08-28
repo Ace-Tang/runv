@@ -30,9 +30,10 @@ func getDefaultBundlePath() string {
 }
 
 // getKernelFiles chooses kernel/initrd/bios/cbfs files based on user specified ones
-func getKernelFiles(context *cli.Context, rootPath string) (string, string, string, string, error) {
+func getKernelFiles(context *cli.Context, rootPath string) (string, string, string, string, string, error) {
 	kernel := context.GlobalString("kernel")
 	initrd := context.GlobalString("initrd")
+	memPath := context.GlobalString("mem-path")
 	bios := context.GlobalString("bios")
 	cbfs := context.GlobalString("cbfs")
 	bundle := context.String("bundle")
@@ -70,10 +71,10 @@ func getKernelFiles(context *cli.Context, rootPath string) (string, string, stri
 			var err error
 			*k, err = filepath.Abs(*k)
 			if err != nil {
-				return "", "", "", "", fmt.Errorf("cannot get abs path for kernel files: %v", err)
+				return "", "", "", "", "", fmt.Errorf("cannot get abs path for kernel files: %v", err)
 			}
 		}
 	}
 
-	return kernel, initrd, bios, cbfs, nil
+	return kernel, initrd, bios, cbfs, memPath, nil
 }

@@ -81,6 +81,7 @@ var ContainerdCommand = cli.Command{
 		driver := context.GlobalString("driver")
 		kernel := context.GlobalString("kernel")
 		initrd := context.GlobalString("initrd")
+		memPath := context.GlobalString("mem-path")
 		bios := context.GlobalString("bios")
 		cbfs := context.GlobalString("cbfs")
 		vsock := context.GlobalBool("vsock")
@@ -144,6 +145,7 @@ var ContainerdCommand = cli.Command{
 				Initrd:      initrd,
 				Bios:        bios,
 				Cbfs:        cbfs,
+				MemoryPath:  memPath,
 				EnableVsock: vsock,
 			}
 			f = singlefactory.Dummy(bootConfig)

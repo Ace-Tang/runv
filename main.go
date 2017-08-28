@@ -111,6 +111,10 @@ func main() {
 			Usage: "runv-compatible initrd for the container",
 		},
 		cli.StringFlag{
+			Name:  "mem-path",
+			Usage: "mem-path for the container",
+		},
+		cli.StringFlag{
 			Name:  "bios",
 			Usage: "bios for the container",
 		},
