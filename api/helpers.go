@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/opencontainers/runtime-spec/specs-go"
+	specs "github.com/opencontainers/runtime-spec/specs-go"
 )
 
 func (v *VolumeDescription) IsDir() bool {
@@ -53,7 +53,6 @@ func ContainerDescriptionFromOCF(id string, s *specs.Spec) *ContainerDescription
 		})
 	}
 	// TODO handle Rlimits in hyperstart
-	container.Rlimits = []*Rlimit{}
 
 	if container.Sysctl == nil {
 		container.Sysctl = map[string]string{}
