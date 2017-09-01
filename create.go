@@ -215,17 +215,16 @@ func runContainer(context *cli.Context, createOnly bool) error {
 			"--qemu-version", context.GlobalString("qemu-version"),
 		}
 
-		// if bios+cbfs exist, use them first.
+		// if bios+cbfs exist, use them first. then use kernel + mem-path for vlinux. at last use kernel + initrd
 		if bios != "" && cbfs != "" {
 			args = append(args, "--bios", bios, "--cbfs", cbfs)
+		} else if kernel != "" && memPath != "" {
+			args = append(args, "--kernel", kernel, "--mem-path", memPath)
 		} else if kernel != "" && initrd != "" {
 			args = append(args, "--kernel", kernel, "--initrd", initrd)
 		} else {
-			fmt.Fprintf(os.Stderr, "either bios+cbfs or kernel+initrd must be specified")
+			logrus.Errorf("either bios+cbfs or kernel+mem-path  or kernel+initrd must be specified")
 			os.Exit(-1)
-		}
-		if memPath != "" {
-			args = append(args, "--mem-path", memPath)
 		}
 
 		if context.GlobalBool("debug") {

@@ -123,8 +123,8 @@ var ContainerdCommand = cli.Command{
 			} else if driver == "" {
 				driver = tconfig.Driver
 			}
-		} else if (bios == "" || cbfs == "") && (kernel == "" || initrd == "") {
-			err := fmt.Errorf("argument kernel+initrd or bios+cbfs must be set")
+		} else if (bios == "" || cbfs == "") && (kernel == "" || memPath == "") && (kernel == "" || initrd == "") {
+			err := fmt.Errorf("argument kernel+initrd or kernel+mem-path or bios+cbfs must be set")
 			glog.Error(err)
 			return cli.NewExitError(err.Error(), -1)
 		}
