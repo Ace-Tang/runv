@@ -16,6 +16,7 @@ var (
 
 const (
 	QEMU_SYSTEM_EXE = "qemu-system-x86_64"
+	QEMU_LITE_EXE   = "/opt/vlinux/latest/qemu-lite/bin/qemu-system-x86_64"
 )
 
 func (qc *QemuContext) arguments(ctx *hypervisor.VmContext) []string {
