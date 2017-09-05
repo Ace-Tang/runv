@@ -3,9 +3,11 @@ package supervisor
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"regexp"
 	"strconv"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -151,11 +153,24 @@ func (sv *Supervisor) getProcess(container, processId string) *Process {
 }
 
 func (sv *Supervisor) reaper() {
+	// start handling signals as soon as possible so that things are properly reaped
+	// or if runtime exits before we hit the handler
+	signals := make(chan os.Signal, 2048)
+	signal.Notify(signals)
+
 	events := sv.Events.Events(time.Time{})
-	for e := range events {
+	select {
+	case e := <-events:
 		if e.Type == EventExit {
 			logrus.Infof("process exit %s %s", e.ID, e.PID)
 			go sv.reap(e.ID, e.PID)
+		}
+	case s := <-signals:
+		if s == syscall.SIGCHLD {
+			exits, _ := Reap(false)
+			for _, e := range exits {
+				logrus.Infof("runv-containerd: get pid exit %d", e.Pid)
+			}
 		}
 	}
 }
@@ -182,6 +197,52 @@ func (sv *Supervisor) reap(container, processId string) {
 			c.ownerPod.reap()
 		}
 	}
+}
+
+// Exit is the wait4 information from an exited process
+type Exit struct {
+	Pid    int
+	Status int
+}
+
+// Reap reaps all child processes for the calling process and returns their
+// exit information
+func Reap(wait bool) (exits []Exit, err error) {
+	var (
+		ws  syscall.WaitStatus
+		rus syscall.Rusage
+	)
+	flag := syscall.WNOHANG
+	if wait {
+		flag = 0
+	}
+	for {
+		pid, err := syscall.Wait4(-1, &ws, flag, &rus)
+		if err != nil {
+			if err == syscall.ECHILD {
+				return exits, nil
+			}
+			return exits, err
+		}
+		if pid <= 0 {
+			return exits, nil
+		}
+		exits = append(exits, Exit{
+			Pid:    pid,
+			Status: exitStatus(ws),
+		})
+	}
+}
+
+const exitSignalOffset = 128
+
+// exitStatus returns the correct exit status for a process based on if it
+// was signaled or exited cleanly
+func exitStatus(status syscall.WaitStatus) int {
+	if status.Signaled() {
+		return exitSignalOffset + int(status.Signal())
+	}
+	return status.ExitStatus()
 }
 
 // find shared pod or create a new one
