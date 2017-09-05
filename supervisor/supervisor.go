@@ -3,9 +3,11 @@ package supervisor
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"regexp"
 	"strconv"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -13,8 +15,6 @@ import (
 	"github.com/hyperhq/runv/factory"
 	runcutils "github.com/opencontainers/runc"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
-	"os/signal"
-	"syscall"
 )
 
 type Supervisor struct {
@@ -158,15 +158,14 @@ func (sv *Supervisor) reaper() {
 	signals := make(chan os.Signal, 2048)
 	signal.Notify(signals)
 
-
 	events := sv.Events.Events(time.Time{})
 	select {
-	case e := <- events:
+	case e := <-events:
 		if e.Type == EventExit {
 			logrus.Infof("process exit %s %s", e.ID, e.PID)
 			go sv.reap(e.ID, e.PID)
 		}
-	case s := <- signals:
+	case s := <-signals:
 		if s == syscall.SIGCHLD {
 			exits, _ := Reap(false)
 			for _, e := range exits {
@@ -233,6 +232,17 @@ func Reap(wait bool) (exits []Exit, err error) {
 			Status: exitStatus(ws),
 		})
 	}
+}
+
+const exitSignalOffset = 128
+
+// exitStatus returns the correct exit status for a process based on if it
+// was signaled or exited cleanly
+func exitStatus(status syscall.WaitStatus) int {
+	if status.Signaled() {
+		return exitSignalOffset + int(status.Signal())
+	}
+	return status.ExitStatus()
 }
 
 // find shared pod or create a new one
