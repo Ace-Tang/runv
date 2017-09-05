@@ -40,7 +40,11 @@ func qemuContext(ctx *hypervisor.VmContext) *QemuContext {
 }
 
 func InitDriver() *QemuDriver {
-	cmd, err := exec.LookPath(QEMU_SYSTEM_EXE)
+	qemuExe := QEMU_SYSTEM_EXE
+	if QemuVersion == "vlinux" {
+		qemuExe = QEMU_LITE_EXE
+	}
+	cmd, err := exec.LookPath(qemuExe)
 	if err != nil {
 		return nil
 	}
