@@ -205,7 +205,7 @@ func runProcess(context *cli.Context, container string, config *specs.Process) (
 			return -1, fmt.Errorf("failed to set raw terminal: %v", err)
 		}
 		defer term.RestoreTerminal(os.Stdin.Fd(), s)
-		monitorTtySize(c, container, process, make(chan struct{}))
+		go monitorTtySize(c, container, process, make(chan struct{}))
 	}
 
 	err = ociCreate(context, container, process, filepath.Join(context.GlobalString("root"), container, "namespace"), func(stdin, stdout, stderr string) error {
