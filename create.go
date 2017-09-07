@@ -128,7 +128,7 @@ func runContainer(context *cli.Context, createOnly bool) error {
 			}
 			os.RemoveAll(filepath.Join(context.GlobalString("root"), container))
 		} else {
-			return fmt.Errorf("container %q exists", container)
+			return fmt.Errorf("container %q exists %v", container, err)
 		}
 	}
 	if err = checkConsole(context, &spec.Process, createOnly); err != nil {
