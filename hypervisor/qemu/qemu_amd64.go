@@ -121,6 +121,9 @@ func (qc *QemuContext) arguments(ctx *hypervisor.VmContext) []string {
 			"-device", fmt.Sprintf("virtio-9p-pci,fsdev=virtio9p,mount_tag=%s", hypervisor.ShareDirTag),
 		)
 	}
+	if qc.debug {
+		glog.Infof("qemu will run in debug mode")
+	}
 
 	return params
 }

@@ -136,6 +136,12 @@ var ContainerdCommand = cli.Command{
 			return cli.NewExitError(err.Error(), -1)
 		}
 
+		if setter, ok := hypervisor.HDriver.(interface {
+			SetDebug(b bool)
+		}); ok {
+			setter.SetDebug(context.GlobalBool("debug"))
+		}
+
 		var f factory.Factory
 		if template != "" {
 			f = singlefactory.New(templatefactory.NewFromExisted(tconfig))
