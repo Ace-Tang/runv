@@ -90,9 +90,20 @@ func runContainer(context *cli.Context, createOnly bool) error {
 	}
 	_, err = os.Stat(filepath.Join(root, container))
 	if err == nil {
-		_, err := getClient(filepath.Join(context.GlobalString("root"), container, "namespace/namespaced.sock"))
+		cl, err := getClient(filepath.Join(context.GlobalString("root"), container, "namespace/namespaced.sock"))
 		fmt.Println(filepath.Join(context.GlobalString("root"), container, "namespace/namespaced.sock"), err)
+		var clientError bool
 		if err != nil && strings.Contains(err.Error(), "grpc.Dial error:") {
+			clientError = true
+		} else if err == nil && cl != nil {
+			in := &types.GetServerVersionRequest{}
+			_, err = cl.GetServerVersion(netcontext.Background(), in)
+			if err != nil {
+				fmt.Println("get grpc client error ", container, err)
+				clientError = true
+			}
+		}
+		if clientError {
 			//container already exit
 			ba, err := ioutil.ReadFile(filepath.Join(context.GlobalString("root"), container, "vm-root", "pidfile"))
 			if err == nil {
