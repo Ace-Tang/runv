@@ -33,6 +33,7 @@ type QemuContext struct {
 	qemuLogFile *QemuLogFile
 	cpus        int
 	process     *os.Process
+	debug       bool
 }
 
 func qemuContext(ctx *hypervisor.VmContext) *QemuContext {
@@ -359,6 +360,10 @@ func (qc *QemuContext) Save(ctx *hypervisor.VmContext, path string) error {
 	}
 
 	return <-result
+}
+
+func (qc *QemuContext) SetDebug(b bool) {
+	qc.debug = b
 }
 
 func (qc *QemuDriver) SupportLazyMode() bool {
