@@ -278,7 +278,9 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		if sp == nil {
 			sp = &syscall.SysProcAttr{}
 		}
-		sp.Cloneflags = sp.Cloneflags | uintptr(syscall.CLONE_NEWPID)
+		if !context.GlobalBool("debug") {
+			sp.Cloneflags = sp.Cloneflags | uintptr(syscall.CLONE_NEWPID)
+		}
 		cmd.SysProcAttr = sp
 
 		logFile2, ex := os.OpenFile(filepath.Join("/var/log/runv", container, "containerd.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
