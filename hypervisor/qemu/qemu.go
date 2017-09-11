@@ -20,6 +20,7 @@ import (
 type QemuDriver struct {
 	executable string
 	hasVsock   bool
+	debug      bool
 }
 
 //implement the hypervisor.DriverContext interface
@@ -33,7 +34,6 @@ type QemuContext struct {
 	qemuLogFile *QemuLogFile
 	cpus        int
 	process     *os.Process
-	debug       bool
 }
 
 func qemuContext(ctx *hypervisor.VmContext) *QemuContext {
@@ -362,7 +362,7 @@ func (qc *QemuContext) Save(ctx *hypervisor.VmContext, path string) error {
 	return <-result
 }
 
-func (qc *QemuContext) SetDebug(b bool) {
+func (qc *QemuDriver) SetDebug(b bool) {
 	qc.debug = b
 }
 
