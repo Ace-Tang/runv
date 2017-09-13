@@ -300,8 +300,14 @@ func (sv *Supervisor) getHyperPod(container string, spec *specs.Spec) (hp *Hyper
 		if err != nil {
 			return nil, err
 		}
-		cgManager.Apply(sv.CtrdPid)
-		cgManager.Set(config)
+		err = cgManager.Apply(sv.CtrdPid)
+		if err != nil {
+			glog.Errorf("apply pid into cgroup error %v", err)
+		}
+		err = cgManager.Set(config)
+		if err != nil {
+			glog.Errorf("set config for cgroup error %v", err)
+		}
 
 		func() {
 			sv.Unlock()

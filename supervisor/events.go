@@ -92,11 +92,9 @@ func (se *SvEvents) Events(from time.Time) chan Event {
 	c := make(chan Event, defaultEventsBufferSize)
 	se.subscribers[c] = struct{}{}
 	if !from.IsZero() {
-		// replay old event
+		// exit code may later than Events() be called
 		for _, e := range se.eventLog {
-			if e.Timestamp.After(from) {
-				c <- e
-			}
+			c <- e
 		}
 		// Notify the client that from now on it's live events
 		c <- Event{
