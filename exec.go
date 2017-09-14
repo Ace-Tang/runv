@@ -10,7 +10,7 @@ import (
 
 	"github.com/hyperhq/runv/containerd/api/grpc/types"
 	"github.com/hyperhq/runv/lib/term"
-	"github.com/opencontainers/runtime-spec/specs-go"
+	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/urfave/cli"
 	netcontext "golang.org/x/net/context"
 )
@@ -208,7 +208,7 @@ func runProcess(context *cli.Context, container string, config *specs.Process) (
 		go monitorTtySize(c, container, process, make(chan struct{}))
 	}
 
-	err = ociCreate(context, container, process, filepath.Join(context.GlobalString("root"), container, "namespace"), func(stdin, stdout, stderr string) error {
+	err = ociCreate(context, container, process, filepath.Join(context.GlobalString("root"), container, "namespace"), nil, func(stdin, stdout, stderr string) error {
 		p := &types.AddProcessRequest{
 			Id:       container,
 			Pid:      process,

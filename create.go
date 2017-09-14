@@ -17,6 +17,8 @@ import (
 	"github.com/hyperhq/runv/containerd/api/grpc/types"
 	"github.com/kardianos/osext"
 	"github.com/kr/pty"
+	runcutils "github.com/opencontainers/runc"
+	"github.com/opencontainers/runc/libcontainer/cgroups"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/urfave/cli"
 	netcontext "golang.org/x/net/context"
@@ -308,10 +310,26 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		}
 	}
 
-	err = createContainer(context, container, namespace, spec)
+	// create cgroup manager
+	cgManager, config, err := runcutils.NewCgManager(spec, context.GlobalBool("systemd-cgroup"))
+	if err != nil {
+		logrus.Errorf("create cgroup manager error %v", err)
+		return err
+	}
+	err = cgManager.Apply(cmd.Process.Pid)
+	if err != nil {
+		logrus.Errorf("apply containerd  pid into cgroup error %v", err)
+	}
+	err = cgManager.Set(config)
+	if err != nil {
+		logrus.Errorf("set config for cgroup error %v", err)
+	}
+
+	err = createContainer(context, container, namespace, cgManager, spec)
 	if err != nil {
 		logrus.Errorf("create container error %v", err)
 		cmd.Process.Signal(syscall.SIGINT)
+		cgManager.Destroy()
 		return fmt.Errorf("failed to create container: %v", err)
 	}
 	if !createOnly {
@@ -351,14 +369,14 @@ func checkConsole(context *cli.Context, p *specs.Process, createOnly bool) error
 // * In runv, shared namespaces multiple containers are located in the same VM which is managed by a runv-daemon.
 // * Any running container can exit in any arbitrary order, the runv-daemon and the VM are existed until the last container of the VM is existed
 
-func createContainer(context *cli.Context, container, namespace string, config *specs.Spec) error {
+func createContainer(context *cli.Context, container, namespace string, manager cgroups.Manager, config *specs.Spec) error {
 	address := filepath.Join(namespace, "namespaced.sock")
 	c, err := getClient(address)
 	if err != nil {
 		return err
 	}
 
-	return ociCreate(context, container, "init", namespace, func(stdin, stdout, stderr string) error {
+	return ociCreate(context, container, "init", namespace, manager, func(stdin, stdout, stderr string) error {
 		r := &types.CreateContainerRequest{
 			Id:         container,
 			Runtime:    "runv-create",
@@ -382,7 +400,7 @@ func createContainer(context *cli.Context, container, namespace string, config *
 
 }
 
-func ociCreate(context *cli.Context, container, process, namespace string, createFunc func(stdin, stdout, stderr string) error) error {
+func ociCreate(context *cli.Context, container, process, namespace string, manager cgroups.Manager, createFunc func(stdin, stdout, stderr string) error) error {
 	logFile, ex := os.OpenFile(filepath.Join("/var/log/runv", container, "create.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if ex != nil {
 		return ex
@@ -475,6 +493,13 @@ func ociCreate(context *cli.Context, container, process, namespace string, creat
 		err = createPidFile(context.String("pid-file"), cmd.Process.Pid)
 		if err != nil {
 			return err
+		}
+	}
+
+	if manager != nil {
+		err = manager.Apply(cmd.Process.Pid)
+		if err != nil {
+			logrus.Errorf("apply shim init proxy pid into cgroup error %v", err)
 		}
 	}
 
