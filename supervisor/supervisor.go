@@ -291,22 +291,7 @@ func (sv *Supervisor) getHyperPod(container string, spec *specs.Spec) (hp *Hyper
 		}
 	}
 	if hp == nil {
-		// use 'func() + defer' to ensure we regain the lock when createHyperPod() panic.
-		// cgroup control hyperpod， resource limit only come from first container in pod
-		// add containerd pid into cgroup
 		glog.Infof("app first created pod into cgroup, containerd pid %v", sv.CtrdPid)
-		//cgManager, config, err := runcutils.NewCgManager(spec, sv.UsedSystemdCgroup)
-		//if err != nil {
-		//	return nil, err
-		//}
-		//err = cgManager.Apply(sv.CtrdPid)
-		//if err != nil {
-		//	glog.Errorf("apply pid into cgroup error %v", err)
-		//}
-		//err = cgManager.Set(config)
-		//if err != nil {
-		//	glog.Errorf("set config for cgroup error %v", err)
-		//}
 
 		func() {
 			sv.Unlock()
@@ -318,9 +303,6 @@ func (sv *Supervisor) getHyperPod(container string, spec *specs.Spec) (hp *Hyper
 			return nil, err
 		}
 		hp.sv = sv
-		//hp.CgManager = cgManager
-		//hp.config = config
-		// recheck existed
 		if _, ok := sv.Containers[container]; ok {
 			go hp.reap()
 			return nil, fmt.Errorf("The container %s is already existing", container)
