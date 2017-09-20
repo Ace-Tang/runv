@@ -20,6 +20,10 @@ func (ctx *VmContext) loop() {
 			ctx.Log(DEBUG, "got nil event.")
 			continue
 		}
+		switch r := ev.(type) {
+		case VmStartFailEvent:
+			ctx.Log(ERROR, r.Message)
+		}
 		ctx.Log(TRACE, "main event loop got message %d(%s)", ev.Event(), EventString(ev.Event()))
 		ctx.handler(ctx, ev)
 	}
