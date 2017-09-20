@@ -1,5 +1,7 @@
 package hypervisor
 
+import "runtime"
+
 const (
 	BaseDir         = "/var/run/hyper"
 	HyperSockName   = "hyper.sock"
@@ -10,9 +12,12 @@ const (
 	DefaultInitrd   = "/var/lib/hyper/hyper-initrd.img"
 	DetachKeys      = "ctrl-p,ctrl-q"
 
+	DefaultMaxMem = 32768 // size in MiB
+)
+
+var (
 	// cpu/mem hotplug constants
-	DefaultMaxCpus = 8     // CONFIG_NR_CPUS hyperstart.git/build/kernel_config
-	DefaultMaxMem  = 32768 // size in MiB
+	DefaultMaxCpus = runtime.NumCPU() // CONFIG_NR_CPUS hyperstart.git/build/kernel_config
 )
 
 var InterfaceCount int = 1
