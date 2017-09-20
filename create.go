@@ -325,12 +325,10 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		err = cgManager.Apply(cmd.Process.Pid)
 		if err != nil {
 			logrus.Errorf("apply containerd  pid into cgroup error %v", err)
-			return err
 		}
 		err = cgManager.Set(config)
 		if err != nil {
 			logrus.Errorf("set config for cgroup error %v", err)
-			return err
 		}
 	}
 
