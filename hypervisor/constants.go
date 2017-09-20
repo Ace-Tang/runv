@@ -11,7 +11,7 @@ const (
 	DetachKeys      = "ctrl-p,ctrl-q"
 
 	// cpu/mem hotplug constants
-	DefaultMaxCpus = 8     // CONFIG_NR_CPUS hyperstart.git/build/kernel_config
+	DefaultMaxCpus = 64    // CONFIG_NR_CPUS hyperstart.git/build/kernel_config
 	DefaultMaxMem  = 32768 // size in MiB
 )
 
