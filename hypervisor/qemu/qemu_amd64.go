@@ -97,8 +97,8 @@ func (qc *QemuContext) arguments(ctx *hypervisor.VmContext) []string {
 		params = append(params, "-qmp", fmt.Sprintf("unix:%s,server,nowait", qc.qmpSockName),
 			"-device", "virtio-serial-pci,id=virtio-serial0", "-device", "virtio-scsi-pci,id=scsi0",
 
-			"-device", "virtconsole,chardev=charconsole1,id=console1",
-			"-chardev", fmt.Sprintf("socket,id=charconsole1,path=%s,server,nowait", ctx.ConsoleSockName),
+			"-device", "virtconsole,chardev=charconsole0,id=console0",
+			"-chardev", fmt.Sprintf("socket,id=charconsole0,path=%s,server,nowait", ctx.ConsoleSockName),
 			// hyperstart channel
 			"-chardev", fmt.Sprintf("socket,id=charch1,path=%s,server,nowait", ctx.TtySockName),
 			"-device", "virtserialport,bus=virtio-serial0.0,nr=2,chardev=charch1,id=channel1,name=sh.hyper.channel.1",
@@ -108,6 +108,12 @@ func (qc *QemuContext) arguments(ctx *hypervisor.VmContext) []string {
 			"-fsdev", fmt.Sprintf("local,id=virtio9p,path=%s,security_model=none", ctx.ShareDir),
 			"-device", fmt.Sprintf("virtio-9p-pci,fsdev=virtio9p,mount_tag=%s", hypervisor.ShareDirTag),
 		)
+
+		if qc.debug {
+			// reserved for debugging qemu console
+			params = append(params, "-device", "virtconsole,chardev=charconsole1,id=console1",
+				"-chardev", fmt.Sprintf("socket,id=charconsole1,path=%s,server,nowait", fmt.Sprintf("%s.debug", ctx.ConsoleSockName)))
+		}
 
 	} else {
 
