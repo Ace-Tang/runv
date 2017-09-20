@@ -505,12 +505,11 @@ func ociCreate(context *cli.Context, container, process, namespace string, manag
 		if err != nil {
 			return err
 		}
-	}
-
-	if manager != nil && cmd != nil {
-		err = manager.Apply(cmd.Process.Pid)
-		if err != nil {
-			logrus.Errorf("apply shim init proxy pid into cgroup error %v", err)
+		if manager != nil {
+			err = manager.Apply(cmd.Process.Pid)
+			if err != nil {
+				logrus.Errorf("apply shim init proxy pid into cgroup error %v", err)
+			}
 		}
 	}
 
