@@ -19,6 +19,7 @@ import (
 	"github.com/kr/pty"
 	runcutils "github.com/opencontainers/runc"
 	"github.com/opencontainers/runc/libcontainer/cgroups"
+	"github.com/opencontainers/runc/libcontainer/configs"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/urfave/cli"
 	netcontext "golang.org/x/net/context"
@@ -312,26 +313,34 @@ func runContainer(context *cli.Context, createOnly bool) error {
 		}
 	}
 
-	// create cgroup manager
-	cgManager, config, err := runcutils.NewCgManager(spec, context.GlobalBool("systemd-cgroup"))
-	if err != nil {
-		logrus.Errorf("create cgroup manager error %v", err)
-		return err
-	}
-	err = cgManager.Apply(cmd.Process.Pid)
-	if err != nil {
-		logrus.Errorf("apply containerd  pid into cgroup error %v", err)
-	}
-	err = cgManager.Set(config)
-	if err != nil {
-		logrus.Errorf("set config for cgroup error %v", err)
+	var cgManager cgroups.Manager
+	if cmd != nil {
+		// create cgroup manager
+		var config *configs.Config
+		cgManager, config, err = runcutils.NewCgManager(spec, context.GlobalBool("systemd-cgroup"))
+		if err != nil {
+			logrus.Errorf("create cgroup manager error %v", err)
+			return err
+		}
+		err = cgManager.Apply(cmd.Process.Pid)
+		if err != nil {
+			logrus.Errorf("apply containerd  pid into cgroup error %v", err)
+			return err
+		}
+		err = cgManager.Set(config)
+		if err != nil {
+			logrus.Errorf("set config for cgroup error %v", err)
+			return err
+		}
 	}
 
 	err = createContainer(context, container, namespace, cgManager, spec)
 	if err != nil {
 		logrus.Errorf("create container error %v", err)
 		cmd.Process.Signal(syscall.SIGINT)
-		cgManager.Destroy()
+		if cgManager != nil {
+			cgManager.Destroy()
+		}
 		return fmt.Errorf("failed to create container: %v", err)
 	}
 	if !createOnly {
@@ -498,7 +507,7 @@ func ociCreate(context *cli.Context, container, process, namespace string, manag
 		}
 	}
 
-	if manager != nil {
+	if manager != nil && cmd != nil {
 		err = manager.Apply(cmd.Process.Pid)
 		if err != nil {
 			logrus.Errorf("apply shim init proxy pid into cgroup error %v", err)
