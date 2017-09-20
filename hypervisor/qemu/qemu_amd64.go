@@ -109,7 +109,7 @@ func (qc *QemuContext) arguments(ctx *hypervisor.VmContext) []string {
 			"-device", fmt.Sprintf("virtio-9p-pci,fsdev=virtio9p,mount_tag=%s", hypervisor.ShareDirTag),
 		)
 
-		if qc.debug {
+		if qc.driver.debug {
 			// reserved for debugging qemu console
 			params = append(params, "-device", "virtconsole,chardev=charconsole1,id=console1",
 				"-chardev", fmt.Sprintf("socket,id=charconsole1,path=%s,server,nowait", fmt.Sprintf("%s.debug", ctx.ConsoleSockName)))
