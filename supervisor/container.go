@@ -1,6 +1,7 @@
 package supervisor
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -349,9 +350,31 @@ func execPoststopHooks(rt *specs.Spec, state *specs.State) error {
 	return nil
 }
 
+func umountSubDir(rootfs string) {
+	if rootfs == "" {
+		return
+	}
+	mntFile, err := os.OpenFile("/proc/mounts", os.O_RDONLY, 0644)
+	if err != nil {
+		glog.Errorf("open /proc/mounts error %v", err)
+	}
+	defer mntFile.Close()
+
+	scaner := bufio.NewScanner(mntFile)
+	for scaner.Scan() {
+		rawStr := scaner.Text()
+		lines := strings.Split(rawStr, " ")
+		if len(lines) < 2 || !strings.Contains(lines[1], rootfs) {
+			continue
+		}
+		utils.Umount(lines[1])
+	}
+}
+
 func (c *Container) reap() {
 	containerRoot := filepath.Join(hypervisor.BaseDir, c.ownerPod.vm.Id, hypervisor.ShareDirTag, c.Id)
 	rootfs := filepath.Join(containerRoot, "rootfs")
+	umountSubDir(rootfs)
 	utils.Umount(rootfs)
 	utils.Umount(containerRoot)
 	os.RemoveAll(containerRoot)
