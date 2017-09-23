@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/golang/glog"
 	"github.com/hyperhq/runv/factory"
 	specs "github.com/opencontainers/runtime-spec/specs-go"
@@ -158,17 +157,19 @@ func (sv *Supervisor) reaper() {
 	signal.Notify(signals)
 
 	events := sv.Events.Events(time.Time{})
-	select {
-	case e := <-events:
-		if e.Type == EventExit {
-			logrus.Infof("process exit %s %s", e.ID, e.PID)
-			go sv.reap(e.ID, e.PID)
-		}
-	case s := <-signals:
-		if s == syscall.SIGCHLD {
-			exits, _ := Reap(false)
-			for _, e := range exits {
-				logrus.Infof("runv-containerd: get pid exit %d", e.Pid)
+	for {
+		select {
+		case e := <-events:
+			if e.Type == EventExit {
+				glog.Infof("process exit %s %s", e.ID, e.PID)
+				go sv.reap(e.ID, e.PID)
+			}
+		case s := <-signals:
+			if s == syscall.SIGCHLD {
+				exits, _ := Reap(false)
+				for _, e := range exits {
+					glog.Infof("runv-containerd: get pid exit %d", e.Pid)
+				}
 			}
 		}
 	}
