@@ -42,7 +42,7 @@ func (qc *QemuContext) arguments(ctx *hypervisor.VmContext) []string {
 
 	if QemuVersion == "vlinux" {
 		machineClass = "pc-lite"
-		cmdline = "root=/dev/pmem0p1 rootflags=dax,data=ordered,errors=remount-ro rw rootfstype=ext4 tsc=reliable no_timer_check rcupdate.rcu_expedited=1 i8042.direct=1 i8042.dumbkbd=1 i8042.nopnp=1 i8042.noaux=1 noreplace-smp reboot=k panic=1 console=hvc0 console=hvc1 console=hvc2 console=hvc3 initcall_debug init=/usr/lib/systemd/systemd systemd.unit=cc-agent.target iommu=off quiet systemd.mask=systemd-networkd.service systemd.mask=systemd-networkd.socket systemd.show_status=false cryptomgr.notests"
+		cmdline = "root=/dev/pmem0p1 rootflags=dax,data=ordered,errors=remount-ro rw rootfstype=ext4 tsc=reliable no_timer_check rcupdate.rcu_expedited=1 i8042.direct=1 i8042.dumbkbd=1 i8042.nopnp=1 i8042.noaux=1 noreplace-smp reboot=k panic=1 console=hvc0 console=hvc1 console=hvc2 console=hvc3 initcall_debug init=/usr/lib/systemd/systemd systemd.unit=cc-agent.target iommu=off quiet systemd.mask=systemd-networkd.service systemd.mask=systemd-networkd.socket systemd.show_status=false cryptomgr.notests net.ifnames=0"
 		params = []string{
 			"-machine", machineClass + ",accel=kvm,kernel_irqchip,nvdimm", "-device", "nvdimm,memdev=mem0,id=nv0",
 			"-object", fmt.Sprintf("memory-backend-file,id=mem0,mem-path=%s,size=235929600", boot.MemoryPath),
