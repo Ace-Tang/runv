@@ -175,6 +175,7 @@ func main() {
 		shimCommand,
 		pauseCommand,
 		resumeCommand,
+		updateCommand,
 		containerd.ContainerdCommand,
 	}
 	if err := app.Run(os.Args); err != nil {
